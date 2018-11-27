@@ -92,8 +92,8 @@ def make_graphic_control_extension (disposal_method = 0, reserved = 0, delay_tim
 def make_comment_extension (text):
     blocks = []
     while len (text) > 0:
-        blocks.append (bytes (text[:256], 'utf-8'))
-        text = text[256:]
+        blocks.append (bytes (text[:255], 'utf-8'))
+        text = text[254:]
     return make_extension (0xfe, blocks)
 
 def make_plain_text_extension ():
@@ -249,6 +249,10 @@ make_simple_gif ('0_300x300_4095_codes.gif', 300, 300, values, ['#000000', '#aab
 
 # Comments
 make_simple_gif ('0_1x1_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = 'Hello World!')
+make_simple_gif ('0_1x1_large_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = ' '.join (['Hello World!'] * 1000))
+make_simple_gif ('0_1x1_nul_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = '\0')
+make_simple_gif ('0_1x1_invalid_ascii_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = '\xff')
+make_simple_gif ('0_1x1_invalid_utf8_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = '\xc3\x28')
 
 # LZW without clear, end
 # Various disposal methods
