@@ -226,9 +226,11 @@ for i in range (300*300):
 open ('0_300x300_4095_codes.gif', 'wb').write (make_simple_gif (300, 300, values, ['#000000', '#aabbcc']))
 
 # LZW without clear, end
-# LZW with 4095 codes
 # Various disposal methods
 # Double frame (overwrite)
+# No global color table
+# Background color outside color table
+# Local color table
 
 colors = ['#ffffff', '#ff0000', '#0000ff', '#000000']
 values = [ 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
