@@ -99,8 +99,18 @@ def make_comment_extension (text):
 def make_plain_text_extension ():
     pass # FIXME
 
-def make_application_extension ():
-    pass # FIXME
+def make_application_extension (application_identifier, application_authentication_code, blocks):
+    assert (len (application_identifier) == 8)
+    assert (len (application_authentication_code) == 3)
+    block = bytes (application_identifier + application_authentication_code, 'ascii')
+    return make_extension (0xff, [block] + blocks)
+
+def make_netscape_extension (loop_count = -1):
+    assert (loop_count < 65536)
+    blocks = []
+    if loop_count >= 0:
+        blocks.append (struct.pack ('<BH', 1, loop_count))
+    return make_application_extension ('NETSCAPE', '2.0', blocks)
 
 def bits_required (value):
     if value == 0:
@@ -191,9 +201,11 @@ def make_lzw_data (values, depth = 0):
 def make_trailer ():
     return b'\x3b'
 
-def make_simple_gif (filename, width, height, values, colors, background_color = 0, comment = ''):
+def make_simple_gif (filename, width, height, values, colors, background_color = 0, comment = '', loop_count = -1):
     depth = bits_required (len (colors) - 1)
     data = make_header (width, height, colors, background_color = background_color)
+    if loop_count >= 0:
+        data += make_netscape_extension (loop_count)
     if comment != '':
         data += make_comment_extension (comment)
     data += make_image_descriptor (width, height)
@@ -253,6 +265,13 @@ make_simple_gif ('0_1x1_large_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], c
 make_simple_gif ('0_1x1_nul_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = '\0')
 make_simple_gif ('0_1x1_invalid_ascii_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = '\xff')
 make_simple_gif ('0_1x1_invalid_utf8_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = '\xc3\x28')
+
+# Loops
+make_simple_gif ('0_1x1_loop_infinite.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 0)
+make_simple_gif ('0_1x1_loop_once.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 1)
+make_simple_gif ('0_1x1_loop_max.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 65535)
+# Netscape extension without loop field
+# Netscape extension with multiple loop fields
 
 # LZW without clear, end
 # Various disposal methods

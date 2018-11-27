@@ -110,15 +110,37 @@ def decode_extension (label, blocks):
         if len (blocks) < 1:
             print ('Not enough blocks in Application Extension')
             return False
+        if len (blocks[0]) != 11:
+            print ('Application Extension invalid block size')
+            return False
         try:
-            identifier = str (blocks[0], 'utf-8')
+            identifier = str (blocks[0][:8], 'ascii')
         except:
             print ('Application Extension invalid identifier')
             return False
-        print ('Application Extension:')
-        print ('  Identifier: %s' % identifier)
-        for block in blocks[1:]:
-            print ('  Data: %s' % repr (block))
+        try:
+            authentication_code = str (blocks[0][8:], 'ascii')
+        except:
+            print ('Application Extension invalid authentication code')
+            return False
+        if identifier == 'NETSCAPE':
+            print ('NETSCAPE Extension:')
+            print ('  Version: %s' % authentication_code)
+            for block in blocks[1:]:
+                if block[0] == 0x01:
+                    if len (block) != 3:
+                        print ('NETSCAPE loop sub-block invalid length')
+                        return False
+                    (loop_count,) = struct.unpack ('<xH', block)
+                    print ('  Loop Count: %d' % loop_count)
+                else:
+                    print ('  Sub-Block %d: %s' % (block[0], repr (block[1:])))
+        else:
+            print ('Application Extension:')
+            print ('  Application Identifier: %s' % identifier)
+            print ('  Application Authentication Code: %s' % authentication_code)
+            for block in blocks[1:]:
+                print ('  Data: %s' % repr (block))
     else:
         print ('Extension: 0x%02x' % label)
         for block in blocks:
