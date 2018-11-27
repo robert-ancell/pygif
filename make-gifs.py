@@ -246,7 +246,20 @@ def make_gif (name, width, height, values, colors, background_color = 0, comment
     open (filename, 'wb').write (data)
 
 # Single pixel images
-make_gif ('1x1_aabbcc', 1, 1, [1], ['#000000', '#aabbcc'])
+def make_palette (depth, last_color):
+    colors = []
+    for i in range (2 ** depth - 1):
+        colors.append ('#0000%02x' % i)
+    colors.append (last_color)
+    return colors
+make_gif ('1x1x1_aabbcc', 1, 1, [1], make_palette (1, '#aabbcc'))
+make_gif ('1x1x2_aabbcc', 1, 1, [3], make_palette (2, '#aabbcc'))
+make_gif ('1x1x3_aabbcc', 1, 1, [7], make_palette (3, '#aabbcc'))
+make_gif ('1x1x4_aabbcc', 1, 1, [15], make_palette (4, '#aabbcc'))
+make_gif ('1x1x5_aabbcc', 1, 1, [31], make_palette (5, '#aabbcc'))
+make_gif ('1x1x6_aabbcc', 1, 1, [63], make_palette (6, '#aabbcc'))
+make_gif ('1x1x7_aabbcc', 1, 1, [127], make_palette (7, '#aabbcc'))
+make_gif ('1x1x8_aabbcc', 1, 1, [255], make_palette (8, '#aabbcc'))
 
 # Filled images of increasing sizes
 make_gif ('2x2_aabbcc', 2, 2, [1] * 4, ['#000000', '#aabbcc'])
