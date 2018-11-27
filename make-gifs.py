@@ -226,7 +226,7 @@ def make_lzw_data (values, depth = 0):
 def make_trailer ():
     return b'\x3b'
 
-def make_simple_gif (filename, width, height, values, colors, background_color = 0, comment = '', loop_count = -1, buffer_size = -1, extensions = []):
+def make_gif (name, width, height, values, colors, background_color = 0, comment = '', loop_count = -1, buffer_size = -1, extensions = []):
     depth = bits_required (len (colors) - 1)
     data = make_header (width, height, colors, background_color = background_color)
     if loop_count >= 0:
@@ -239,42 +239,43 @@ def make_simple_gif (filename, width, height, values, colors, background_color =
     data += make_lzw_data (values, depth)
     data += make_trailer ()
 
+    filename = '%s.gif' % name
     open (filename, 'wb').write (data)
 
-make_simple_gif ('0_1x1_aabbcc.gif', 1, 1, [1], ['#000000', '#aabbcc'])
-make_simple_gif ('0_2x2_aabbcc.gif', 2, 2, [1] * 4, ['#000000', '#aabbcc'])
-make_simple_gif ('0_3x3_aabbcc.gif', 3, 3, [1] * 9, ['#000000', '#aabbcc', '#000000', '#000000'])
-make_simple_gif ('0_10x10_aabbcc.gif', 10, 10, [1] * 100, ['#000000', '#aabbcc', '#000000', '#000000'])
+make_gif ('1x1_aabbcc', 1, 1, [1], ['#000000', '#aabbcc'])
+make_gif ('2x2_aabbcc', 2, 2, [1] * 4, ['#000000', '#aabbcc'])
+make_gif ('3x3_aabbcc', 3, 3, [1] * 9, ['#000000', '#aabbcc', '#000000', '#000000'])
+make_gif ('10x10_aabbcc', 10, 10, [1] * 100, ['#000000', '#aabbcc', '#000000', '#000000'])
 
-make_simple_gif ('0_2x2_colors.gif', 2, 2, [0, 1, 2, 3], ['#ff0000', '#ffff00', '#ff00ff', '#ffffff'])
+make_gif ('2x2_colors', 2, 2, [0, 1, 2, 3], ['#ff0000', '#ffff00', '#ff00ff', '#ffffff'])
 
-make_simple_gif ('0_16x16_red.gif', 16, 16, [1] * 256, ['#000000', '#ff0000'])
+make_gif ('16x16_red', 16, 16, [1] * 256, ['#000000', '#ff0000'])
 values = []
 colors = []
 for i in range (256):
     values.append (i)
     colors.append ('#%02x0000' % i)
-make_simple_gif ('0_16x16_reds.gif', 16, 16, values, colors)
+make_gif ('16x16_reds', 16, 16, values, colors)
 
-make_simple_gif ('0_16x16_green.gif', 16, 16, [1] * 256, ['#000000', '#00ff00'])
+make_gif ('16x16_green', 16, 16, [1] * 256, ['#000000', '#00ff00'])
 values = []
 colors = []
 for i in range (256):
     values.append (i)
     colors.append ('#00%02x00' % i)
-make_simple_gif ('0_16x16_greens.gif', 16, 16, values, colors)
+make_gif ('16x16_greens', 16, 16, values, colors)
 
-make_simple_gif ('0_16x16_blue.gif', 16, 16, [1] * 256, ['#000000', '#0000ff'])
+make_gif ('16x16_blue', 16, 16, [1] * 256, ['#000000', '#0000ff'])
 values = []
 colors = []
 for i in range (256):
     values.append (i)
     colors.append ('#0000%02x' % i)
-make_simple_gif ('0_16x16_blues.gif', 16, 16, values, colors)
+make_gif ('16x16_blues', 16, 16, values, colors)
 
 # Maximum sizes
-make_simple_gif ('0_65535x1.gif', 65535, 1, [1] * 65535, ['#000000', '#ff0000', '#00ff00', '#0000ff'])
-make_simple_gif ('0_1x65535.gif', 1, 65535, [1] * 65535, ['#000000', '#ff0000', '#00ff00', '#0000ff'])
+make_gif ('65535x1', 65535, 1, [1] * 65535, ['#000000', '#ff0000', '#00ff00', '#0000ff'])
+make_gif ('1x65535', 1, 65535, [1] * 65535, ['#000000', '#ff0000', '#00ff00', '#0000ff'])
 
 # Uses maximum 4095 codes
 import random
@@ -284,36 +285,36 @@ for i in range (300*300):
     m = 2 ** 32
     seed = (1103515245 * seed + 12345) % m
     values.append (seed >> 31)
-make_simple_gif ('0_300x300_4095_codes.gif', 300, 300, values, ['#000000', '#ffffff'])
+make_gif ('300x300_4095_codes', 300, 300, values, ['#000000', '#ffffff'])
 
 # Comments
-make_simple_gif ('0_1x1_comment.gif', 1, 1, [1], ['#000000', '#ffffff'], comment = 'Hello World!')
-make_simple_gif ('0_1x1_large_comment.gif', 1, 1, [1], ['#000000', '#ffffff'], comment = ' '.join (['Hello World!'] * 1000))
-make_simple_gif ('0_1x1_nul_comment.gif', 1, 1, [1], ['#000000', '#ffffff'], comment = '\0')
-make_simple_gif ('0_1x1_invalid_ascii_comment.gif', 1, 1, [1], ['#000000', '#ffffff'], comment = '\xff')
-make_simple_gif ('0_1x1_invalid_utf8_comment.gif', 1, 1, [1], ['#000000', '#ffffff'], comment = '\xc3\x28')
+make_gif ('1x1_comment', 1, 1, [1], ['#000000', '#ffffff'], comment = 'Hello World!')
+make_gif ('1x1_large_comment', 1, 1, [1], ['#000000', '#ffffff'], comment = ' '.join (['Hello World!'] * 1000))
+make_gif ('1x1_nul_comment', 1, 1, [1], ['#000000', '#ffffff'], comment = '\0')
+make_gif ('1x1_invalid_ascii_comment', 1, 1, [1], ['#000000', '#ffffff'], comment = '\xff')
+make_gif ('1x1_invalid_utf8_comment', 1, 1, [1], ['#000000', '#ffffff'], comment = '\xc3\x28')
 
 # Loops
-make_simple_gif ('0_1x1_loop_infinite.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0)
-make_simple_gif ('0_1x1_loop_once.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 1)
-make_simple_gif ('0_1x1_loop_max.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 65535)
-make_simple_gif ('0_1x1_loop_buffer.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0, buffer_size = 1024)
-make_simple_gif ('0_1x1_loop_buffer_max.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0, buffer_size = 4294967295)
-make_simple_gif ('0_1x1_loop_animexts.gif', 1, 1, [1], ['#000000', '#ffffff'], extensions = [make_animexts_extension (loop_count = 0, buffer_size = 1024)])
+make_gif ('1x1_loop_infinite', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0)
+make_gif ('1x1_loop_once', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 1)
+make_gif ('1x1_loop_max', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 65535)
+make_gif ('1x1_loop_buffer', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0, buffer_size = 1024)
+make_gif ('1x1_loop_buffer_max', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0, buffer_size = 4294967295)
+make_gif ('1x1_loop_animexts', 1, 1, [1], ['#000000', '#ffffff'], extensions = [make_animexts_extension (loop_count = 0, buffer_size = 1024)])
 # Netscape extension without loop field
 # Netscape extension with multiple loop fields
 
 # Plain Text extension
 plain_text_ext = make_plain_text_extension ('Hello', 0, 0, 5, 1, 8, 8, 1, 0)
-make_simple_gif ('0_40x8_plain_text.gif', 40, 8, [0] * 40 * 8, ['#000000', '#ffffff'], extensions = [plain_text_ext])
+make_gif ('40x8_plain_text', 40, 8, [0] * 40 * 8, ['#000000', '#ffffff'], extensions = [plain_text_ext])
 
 # Unknown extensions
 unknown_ext = make_extension (0x2a, [b'Hello', b'World'])
-make_simple_gif ('0_1x1_unknown_extension.gif', 1, 1, [1], ['#000000', '#ffffff'], extensions = [unknown_ext])
+make_gif ('1x1_unknown_extension', 1, 1, [1], ['#000000', '#ffffff'], extensions = [unknown_ext])
 unknown_app_ext = make_application_extension ('UNKNOWN!', 'XXX', [b'Hello', b'World'])
-make_simple_gif ('0_1x1_unknown_application_extension.gif', 1, 1, [1], ['#000000', '#ffffff'], extensions = [unknown_app_ext])
+make_gif ('1x1_unknown_application_extension', 1, 1, [1], ['#000000', '#ffffff'], extensions = [unknown_app_ext])
 nul_app_ext = make_application_extension ('\0\0\0\0\0\0\0\0', '\0\0\0', [b'\0\0\0\0', b'\0\0\0\0'])
-make_simple_gif ('0_1x1_nul_application_extension.gif', 1, 1, [1], ['#000000', '#ffffff'], extensions = [nul_app_ext])
+make_gif ('1x1_nul_application_extension', 1, 1, [1], ['#000000', '#ffffff'], extensions = [nul_app_ext])
 
 # LZW without clear, end
 # Various disposal methods
