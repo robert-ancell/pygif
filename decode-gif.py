@@ -100,6 +100,12 @@ def decode_extension (label, blocks):
             print ('  Transparent Color: %d (!)' % transparent_color)
         print ('  Disposal Method: %s' % get_disposal_method_string (disposal_method))
         print ('  User Input: %s' % repr (user_input))
+    elif label == 0xfe:
+        comment = ''
+        for block in blocks:
+            comment += str (block.decode ('utf-8'))
+        print ('Comment Extension:')
+        print ('  Comment: %s' % repr (comment))
     elif label == 0xff:
         if len (blocks) < 1:
             print ('Not enough blocks in Application Extension')

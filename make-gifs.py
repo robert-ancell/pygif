@@ -68,8 +68,13 @@ def make_color_table (colors):
         data += struct.pack ('BBB', 0, 0, 0)
     return data
 
-def make_extension (label, data):
-    return struct.pack ('BBB', 0x21, label, len (data)) + data + b'\0'
+def make_extension (label, blocks):
+    data = struct.pack ('BB', 0x21, label)
+    for block in blocks:
+        assert (len (block) < 256)
+        data += struct.pack ('B', len (block)) + block
+    data += struct.pack ('B', 0)
+    return data
 
 def make_graphic_control_extension (disposal_method = 0, reserved = 0, delay_time = 0, user_input = False, has_transparent = False, transparent_color = 0):
     assert (0 <= disposal_method <= 7)
@@ -82,7 +87,20 @@ def make_graphic_control_extension (disposal_method = 0, reserved = 0, delay_tim
     if has_transparent:
         flags |= 0x01
     data = struct.pack ('<BHB', flags, delay_time, transparent_color)
-    return make_extension (0xf9, data)
+    return make_extension (0xf9, [data])
+
+def make_comment_extension (text):
+    blocks = []
+    while len (text) > 0:
+        blocks.append (bytes (text[:256], 'utf-8'))
+        text = text[256:]
+    return make_extension (0xfe, blocks)
+
+def make_plain_text_extension ():
+    pass # FIXME
+
+def make_application_extension ():
+    pass # FIXME
 
 def bits_required (value):
     if value == 0:
@@ -173,9 +191,11 @@ def make_lzw_data (values, depth = 0):
 def make_trailer ():
     return b'\x3b'
 
-def make_simple_gif (width, height, values, colors, background_color = 0):
+def make_simple_gif (width, height, values, colors, background_color = 0, comment = ''):
     depth = bits_required (len (colors) - 1)
     data = make_header (width, height, colors, background_color = background_color)
+    if comment != '':
+        data += make_comment_extension (comment)
     data += make_image_descriptor (width, height)
     data += make_lzw_data (values, depth)
     return data + make_trailer ()
@@ -224,6 +244,9 @@ for i in range (300*300):
     seed = (1103515245 * seed + 12345) % m
     values.append (seed >> 31)
 open ('0_300x300_4095_codes.gif', 'wb').write (make_simple_gif (300, 300, values, ['#000000', '#aabbcc']))
+
+# Comments
+open ('0_1x1_comment.gif', 'wb').write (make_simple_gif (1, 1, [1], ['#000000', '#aabbcc'], comment = 'Hello World!'))
 
 # LZW without clear, end
 # Various disposal methods
