@@ -102,10 +102,11 @@ def lzw_compress (values, depth = 0):
         code += (values[index],)
         index += 1
         if code not in codes:
-            new_code = next_code
-            next_code += 1
+            if next_code < 4096:
+                new_code = next_code
+                next_code += 1
+                codes[code] = new_code
 
-            codes[code] = new_code
             stream.append ((codes[code[:-1]], code_size))
             code = code[-1:]
 
@@ -194,8 +195,24 @@ for i in range (256):
     colors.append ('#0000%02x' % i)
 open ('0_16x16_blues.gif', 'wb').write (make_simple_gif (16, 16, values, colors))
 
+# Maximum sizes
 open ('0_65535x1.gif', 'wb').write (make_simple_gif (65535, 1, [1] * 65535, ['#000000', '#ff0000', '#00ff00', '#0000ff']))
 open ('0_1x65535.gif', 'wb').write (make_simple_gif (1, 65535, [1] * 65535, ['#000000', '#ff0000', '#00ff00', '#0000ff']))
+
+# Uses maximum 4095 codes
+import random
+values = []
+seed = 1
+for i in range (300*300):
+    m = 2 ** 32
+    seed = (1103515245 * seed + 12345) % m
+    values.append (seed >> 31)
+open ('0_300x300_4095_codes.gif', 'wb').write (make_simple_gif (300, 300, values, ['#000000', '#aabbcc']))
+
+# LZW without clear, end
+# LZW with 4095 codes
+# Various disposal methods
+# Double frame (overwrite)
 
 colors = ['#ffffff', '#ff0000', '#0000ff', '#000000']
 values = [ 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
