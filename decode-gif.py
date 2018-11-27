@@ -81,7 +81,25 @@ def get_disposal_method_string (disposal_method):
         return str (disposal_method)
 
 def decode_extension (label, blocks):
-    if label == 0xf9:
+    if label == 0x01:
+        if len (blocks) < 1:
+            print ('Not enough blocks in Plain Text Extension')
+            return False
+        if len (blocks[0]) != 12:
+            print ('Length mismatch in Plain Text Extension')
+            return False
+        (left, top, width, height, cell_width, cell_height, foreground_color, background_color) = struct.unpack ('<HHHHBBBB', blocks[0])
+        text = ''
+        for block in blocks[1:]:
+            text += str (block.decode ('ascii'))
+        print ('Plain Text Extension:')
+        print ('  Position: %d,%d' % (left, top))
+        print ('  Grid Size: %dx%d' % (width, height))
+        print ('  Cell Size: %dx%d' % (cell_width, cell_height))
+        print ('  Foreground Color: %d' % foreground_color)
+        print ('  Background Color: %d' % background_color)
+        print ('  Text: %s' % repr (text))
+    elif label == 0xf9:
         if len (blocks) != 1:
             print ('Multiple blocks in Graphic Control Extension')
             return False
@@ -214,7 +232,7 @@ def decode_gif (f):
             color_table_sorted = flags & 0x20 != 0
             color_table_size = flags & 0x7
             print ('Image:')
-            print ('  Position: %dx%d' % (left, top))
+            print ('  Position: %d,%d' % (left, top))
             print ('  Size: %dx%d' % (width, height))
             print ('  Interlace: %s' % str (interlace))
             local_colors = []

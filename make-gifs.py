@@ -96,8 +96,21 @@ def make_comment_extension (text):
         text = text[254:]
     return make_extension (0xfe, blocks)
 
-def make_plain_text_extension ():
-    pass # FIXME
+def make_plain_text_extension (text, left, top, width, height, cell_width, cell_height, foreground_color, background_color):
+    assert (0 <= left <= 65535)
+    assert (0 <= top <= 65535)
+    assert (0 <= width <= 65535)
+    assert (0 <= height <= 65535)
+    assert (0 <= cell_width <= 255)
+    assert (0 <= cell_height <= 255)
+    assert (0 <= foreground_color <= 255)
+    assert (0 <= background_color <= 255)
+    blocks = []
+    blocks.append (struct.pack ('<HHHHBBBB', left, top, width, height, cell_width, cell_height, foreground_color, background_color))
+    while len (text) > 0:
+        blocks.append (bytes (text[:255], 'ascii'))
+        text = text[254:]
+    return make_extension (0x01, blocks)
 
 def make_application_extension (application_identifier, application_authentication_code, blocks):
     assert (len (application_identifier) == 8)
@@ -213,7 +226,7 @@ def make_lzw_data (values, depth = 0):
 def make_trailer ():
     return b'\x3b'
 
-def make_simple_gif (filename, width, height, values, colors, background_color = 0, comment = '', loop_count = -1, buffer_size = -1, use_animexts = False):
+def make_simple_gif (filename, width, height, values, colors, background_color = 0, comment = '', loop_count = -1, buffer_size = -1, use_animexts = False, extensions = []):
     depth = bits_required (len (colors) - 1)
     data = make_header (width, height, colors, background_color = background_color)
     if loop_count >= 0:
@@ -223,6 +236,8 @@ def make_simple_gif (filename, width, height, values, colors, background_color =
             data += make_netscape_extension (loop_count, buffer_size)
     if comment != '':
         data += make_comment_extension (comment)
+    for e in extensions:
+        data += e
     data += make_image_descriptor (width, height)
     data += make_lzw_data (values, depth)
     data += make_trailer ()
@@ -290,6 +305,10 @@ make_simple_gif ('0_1x1_loop_buffer_max.gif', 1, 1, [1], ['#000000', '#aabbcc'],
 make_simple_gif ('0_1x1_loop_animexts.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 0, use_animexts = True)
 # Netscape extension without loop field
 # Netscape extension with multiple loop fields
+
+# Plain Text extension
+plain_text_ext = make_plain_text_extension ('Hello', 0, 0, 5, 1, 8, 8, 1, 0)
+make_simple_gif ('0_40x8_plain_text.gif', 40, 8, [0] * 40 * 8, ['#000000', '#ffffff'], extensions = [plain_text_ext])
 
 # Unknown extension
 # Extension with invalid name
