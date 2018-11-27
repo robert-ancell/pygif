@@ -226,14 +226,11 @@ def make_lzw_data (values, depth = 0):
 def make_trailer ():
     return b'\x3b'
 
-def make_simple_gif (filename, width, height, values, colors, background_color = 0, comment = '', loop_count = -1, buffer_size = -1, use_animexts = False, extensions = []):
+def make_simple_gif (filename, width, height, values, colors, background_color = 0, comment = '', loop_count = -1, buffer_size = -1, extensions = []):
     depth = bits_required (len (colors) - 1)
     data = make_header (width, height, colors, background_color = background_color)
     if loop_count >= 0:
-        if use_animexts:
-            data += make_animexts_extension (loop_count, buffer_size)
-        else:
-            data += make_netscape_extension (loop_count, buffer_size)
+        data += make_netscape_extension (loop_count, buffer_size)
     if comment != '':
         data += make_comment_extension (comment)
     for e in extensions:
@@ -302,7 +299,7 @@ make_simple_gif ('0_1x1_loop_once.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_
 make_simple_gif ('0_1x1_loop_max.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 65535)
 make_simple_gif ('0_1x1_loop_buffer.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0, buffer_size = 1024)
 make_simple_gif ('0_1x1_loop_buffer_max.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0, buffer_size = 4294967295)
-make_simple_gif ('0_1x1_loop_animexts.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0, use_animexts = True)
+make_simple_gif ('0_1x1_loop_animexts.gif', 1, 1, [1], ['#000000', '#ffffff'], extensions = [make_animexts_extension (loop_count = 0, buffer_size = 1024)])
 # Netscape extension without loop field
 # Netscape extension with multiple loop fields
 
