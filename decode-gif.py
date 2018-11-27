@@ -199,10 +199,6 @@ def decode_gif (f):
     depth = ((flags >> 4) & 0x7) + 1
     color_table_sorted = flags & 0x08 != 0
     color_table_size = flags & 0x7
-    print ('Size: %dx%d' % (width, height))
-    print ('Original Depth: %d' % depth)
-    print ('Background Color: %d' % background_color)
-    print ('Pixel Aspect Ratio: %d' % pixel_aspect_ratio)
 
     payload = data[13:]
 
@@ -218,12 +214,26 @@ def decode_gif (f):
             offset = i * 3
             (red, green, blue) = struct.unpack ('BBB', color_map[offset: offset + 3])
             global_colors.append ('#%02x%02x%02x' % (red, green, blue))
-        print ('Colors (%d): %s' % (len (global_colors), ', '.join (global_colors)))
-    else:
-        if color_table_size != 0:
-            print ('Color Table Size: %s' % color_table_size)
-    if color_table_sorted:
-        print ('Color Table Sorted: %s' % str (color_table_sorted))
+    def get_color (colors, index):
+        if 0 <= index <= len (colors):
+            return colors[index]
+        else:
+            return 'INVALID'
+
+    print ('Size: %dx%d pixels' % (width, height))
+    print ('Original Depth: %d bits' % depth)
+    if pixel_aspect_ratio != 0:
+        print ('Pixel Aspect Ratio: %d' % pixel_aspect_ratio)
+    if has_color_table:
+        description = '%d' % len (global_colors)
+        if color_table_sorted:
+            description += ', sorted'
+        print ('Colors (%s): %s' % (description, ', '.join (global_colors)))
+    elif color_table_size != 0:
+        print ('Color Table Size: %s' % color_table_size)
+        if color_table_sorted:
+            print ('Color Table Sorted: %s' % str (color_table_sorted))
+    print ('Background Color: %s (%d)' % (get_color (global_colors, background_color), background_color))
 
     while len (payload) > 0:
         if payload[0] == 0x2c:
