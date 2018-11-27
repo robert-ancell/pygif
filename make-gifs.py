@@ -105,12 +105,24 @@ def make_application_extension (application_identifier, application_authenticati
     block = bytes (application_identifier + application_authentication_code, 'ascii')
     return make_extension (0xff, [block] + blocks)
 
-def make_netscape_extension (loop_count = -1):
+def make_netscape_extension (loop_count = -1, buffer_size = -1):
+    assert (loop_count < 65536)
+    assert (buffer_size < 4294967296)
+    blocks = []
+    if loop_count >= 0:
+        blocks.append (struct.pack ('<BH', 1, loop_count))
+    if buffer_size >= 0:
+        blocks.append (struct.pack ('<BI', 2, buffer_size))
+    return make_application_extension ('NETSCAPE', '2.0', blocks)
+
+def make_animexts_extension (loop_count = -1, buffer_size = -1):
     assert (loop_count < 65536)
     blocks = []
     if loop_count >= 0:
         blocks.append (struct.pack ('<BH', 1, loop_count))
-    return make_application_extension ('NETSCAPE', '2.0', blocks)
+    if buffer_size >= 0:
+        blocks.append (struct.pack ('<BI', 2, buffer_size))
+    return make_application_extension ('ANIMEXTS', '1.0', blocks)
 
 def bits_required (value):
     if value == 0:
@@ -201,11 +213,14 @@ def make_lzw_data (values, depth = 0):
 def make_trailer ():
     return b'\x3b'
 
-def make_simple_gif (filename, width, height, values, colors, background_color = 0, comment = '', loop_count = -1):
+def make_simple_gif (filename, width, height, values, colors, background_color = 0, comment = '', loop_count = -1, buffer_size = -1, use_animexts = False):
     depth = bits_required (len (colors) - 1)
     data = make_header (width, height, colors, background_color = background_color)
     if loop_count >= 0:
-        data += make_netscape_extension (loop_count)
+        if use_animexts:
+            data += make_animexts_extension (loop_count, buffer_size)
+        else:
+            data += make_netscape_extension (loop_count, buffer_size)
     if comment != '':
         data += make_comment_extension (comment)
     data += make_image_descriptor (width, height)
@@ -270,9 +285,14 @@ make_simple_gif ('0_1x1_invalid_utf8_comment.gif', 1, 1, [1], ['#000000', '#aabb
 make_simple_gif ('0_1x1_loop_infinite.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 0)
 make_simple_gif ('0_1x1_loop_once.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 1)
 make_simple_gif ('0_1x1_loop_max.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 65535)
+make_simple_gif ('0_1x1_loop_buffer.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 0, buffer_size = 1024)
+make_simple_gif ('0_1x1_loop_buffer_max.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 0, buffer_size = 4294967295)
+make_simple_gif ('0_1x1_loop_animexts.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 0, use_animexts = True)
 # Netscape extension without loop field
 # Netscape extension with multiple loop fields
 
+# Unknown extension
+# Extension with invalid name
 # LZW without clear, end
 # Various disposal methods
 # Double frame (overwrite)

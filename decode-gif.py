@@ -123,16 +123,22 @@ def decode_extension (label, blocks):
         except:
             print ('Application Extension invalid authentication code')
             return False
-        if identifier == 'NETSCAPE':
-            print ('NETSCAPE Extension:')
+        if identifier == 'NETSCAPE' or identifier == 'ANIMEXTS':
+            print ('%s Extension:' % identifier)
             print ('  Version: %s' % authentication_code)
             for block in blocks[1:]:
-                if block[0] == 0x01:
+                if block[0] == 1:
                     if len (block) != 3:
-                        print ('NETSCAPE loop sub-block invalid length')
+                        print ('%s loop sub-block invalid length' % identifier)
                         return False
                     (loop_count,) = struct.unpack ('<xH', block)
                     print ('  Loop Count: %d' % loop_count)
+                elif block[0] == 2:
+                    if len (block) != 5:
+                        print ('%s buffer size sub-block invalid length' % identifier)
+                        return False
+                    (buffer_size,) = struct.unpack ('<xI', block)
+                    print ('  Buffer Size: %d' % buffer_size)
                 else:
                     print ('  Sub-Block %d: %s' % (block[0], repr (block[1:])))
         else:
