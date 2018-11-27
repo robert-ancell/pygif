@@ -310,8 +310,14 @@ make_simple_gif ('0_1x1_loop_animexts.gif', 1, 1, [1], ['#000000', '#aabbcc'], l
 plain_text_ext = make_plain_text_extension ('Hello', 0, 0, 5, 1, 8, 8, 1, 0)
 make_simple_gif ('0_40x8_plain_text.gif', 40, 8, [0] * 40 * 8, ['#000000', '#ffffff'], extensions = [plain_text_ext])
 
-# Unknown extension
-# Extension with invalid name
+# Unknown extensions
+unknown_ext = make_extension (0x2a, [b'Hello', b'World'])
+make_simple_gif ('0_1x1_unknown_extension.gif', 1, 1, [1], ['#000000', '#ffffff'], extensions = [unknown_ext])
+unknown_app_ext = make_application_extension ('UNKNOWN!', 'XXX', [b'Hello', b'World'])
+make_simple_gif ('0_1x1_unknown_application_extension.gif', 1, 1, [1], ['#000000', '#ffffff'], extensions = [unknown_app_ext])
+nul_app_ext = make_application_extension ('\0\0\0\0\0\0\0\0', '\0\0\0', [b'\0\0\0\0', b'\0\0\0\0'])
+make_simple_gif ('0_1x1_nul_application_extension.gif', 1, 1, [1], ['#000000', '#ffffff'], extensions = [nul_app_ext])
+
 # LZW without clear, end
 # Various disposal methods
 # Double frame (overwrite)

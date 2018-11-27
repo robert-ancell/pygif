@@ -166,7 +166,7 @@ def decode_extension (label, blocks):
             for block in blocks[1:]:
                 print ('  Data: %s' % repr (block))
     else:
-        print ('Extension: 0x%02x' % label)
+        print ('Extension %d:' % label)
         for block in blocks:
             print ('  Data: %s' % repr (block))
     return True
