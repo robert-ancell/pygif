@@ -292,6 +292,10 @@ for i in range (256):
     colors.append ('#0000%02x' % i)
 make_gif ('16x16_blues', 16, 16, values, colors)
 
+# Image with additional values
+make_gif ('1x1_additional_data', 1, 1, [1] * 100, ['#000000', '#ffffff'])
+#make_gif ('1x1_additional_data_after_eoi', 1, 1, [1] * 100, ['#000000', '#ffffff'])
+
 # Optional clear and end-of-information codes
 make_gif ('1x1_no_clear', 1, 1, [1], ['#000000', '#ffffff'], start_with_clear = False)
 make_gif ('1x1_no_eoi', 1, 1, [1], ['#000000', '#ffffff'], end_with_eoi = False)
