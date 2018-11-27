@@ -238,8 +238,9 @@ def make_gif (name, width, height, values, colors, background_color = 0, comment
         data += make_comment_extension (comment)
     for e in extensions:
         data += e
-    data += make_image_descriptor (width, height)
-    data += make_lzw_data (values, depth, start_with_clear, end_with_eoi)
+    if len (values) > 0:
+        data += make_image_descriptor (width, height)
+        data += make_lzw_data (values, depth, start_with_clear, end_with_eoi)
     data += make_trailer ()
 
     filename = '%s.gif' % name
@@ -294,6 +295,9 @@ make_gif ('1x1x5_ffffff', 1, 1, [31], grays5)
 make_gif ('1x1x6_ffffff', 1, 1, [63], grays6)
 make_gif ('1x1x7_ffffff', 1, 1, [127], grays7)
 make_gif ('1x1x8_ffffff', 1, 1, [255], grays8)
+
+# Image with no data
+make_gif ('1x1_ffffff_no_data', 1, 1, [], grays1, background_color = 1)
 
 # Filled images of increasing sizes
 make_gif ('2x2_ffffff', 2, 2, [WHITE] * 4, palette2)
