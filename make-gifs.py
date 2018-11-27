@@ -6,10 +6,10 @@ import struct
 HEADER_87A = b'GIF87a'
 HEADER_89A = b'GIF89a'
 
-def make_header (width, height, colors, depth = 1, header = HEADER_89A, background_color = 0, pixel_aspect_ratio = 0, colors_sorted = False):
+def make_header (width, height, colors, original_depth = 8, header = HEADER_89A, background_color = 0, pixel_aspect_ratio = 0, colors_sorted = False):
     assert (0 <= width <= 65535)
     assert (0 <= height <= 65535)
-    assert (1 <= depth <= 8)
+    assert (1 <= original_depth <= 8)
 
     color_table_size = get_color_table_size (colors)
     assert (color_table_size <= 8)
@@ -18,7 +18,7 @@ def make_header (width, height, colors, depth = 1, header = HEADER_89A, backgrou
     if color_table_size > 0:
         flags |= 0x80
         flags |= color_table_size - 1
-    flags = flags | (depth - 1) << 4
+    flags = flags | (original_depth - 1) << 4
     if colors_sorted:
         flags |= 0x08
     return struct.pack ('<6sHHBBB', header, width, height, flags, background_color, pixel_aspect_ratio) + make_color_table (colors)
@@ -175,7 +175,7 @@ def make_trailer ():
 
 def make_simple_gif (width, height, values, colors, background_color = 0):
     depth = bits_required (len (colors) - 1)
-    data = make_header (width, height, colors, depth = depth, background_color = background_color)
+    data = make_header (width, height, colors, background_color = background_color)
     data += make_image_descriptor (width, height)
     data += make_lzw_data (values, depth)
     return data + make_trailer ()
@@ -243,7 +243,7 @@ values = [ 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
            2, 2, 2, 2, 2, 1, 1, 1, 1, 1,
            2, 2, 2, 2, 2, 1, 1, 1, 1, 1,
            2, 2, 2, 2, 2, 1, 1, 1, 1, 1 ]
-header = make_header (10, 10, colors, depth = 2)
+header = make_header (10, 10, colors, original_depth = 2)
 gce = make_graphic_control_extension ()
 image_descriptor = make_image_descriptor (10, 10)
 data = make_lzw_data (values)
