@@ -287,22 +287,22 @@ for i in range (300*300):
     m = 2 ** 32
     seed = (1103515245 * seed + 12345) % m
     values.append (seed >> 31)
-make_simple_gif ('0_300x300_4095_codes.gif', 300, 300, values, ['#000000', '#aabbcc'])
+make_simple_gif ('0_300x300_4095_codes.gif', 300, 300, values, ['#000000', '#ffffff'])
 
 # Comments
-make_simple_gif ('0_1x1_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = 'Hello World!')
-make_simple_gif ('0_1x1_large_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = ' '.join (['Hello World!'] * 1000))
-make_simple_gif ('0_1x1_nul_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = '\0')
-make_simple_gif ('0_1x1_invalid_ascii_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = '\xff')
-make_simple_gif ('0_1x1_invalid_utf8_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = '\xc3\x28')
+make_simple_gif ('0_1x1_comment.gif', 1, 1, [1], ['#000000', '#ffffff'], comment = 'Hello World!')
+make_simple_gif ('0_1x1_large_comment.gif', 1, 1, [1], ['#000000', '#ffffff'], comment = ' '.join (['Hello World!'] * 1000))
+make_simple_gif ('0_1x1_nul_comment.gif', 1, 1, [1], ['#000000', '#ffffff'], comment = '\0')
+make_simple_gif ('0_1x1_invalid_ascii_comment.gif', 1, 1, [1], ['#000000', '#ffffff'], comment = '\xff')
+make_simple_gif ('0_1x1_invalid_utf8_comment.gif', 1, 1, [1], ['#000000', '#ffffff'], comment = '\xc3\x28')
 
 # Loops
-make_simple_gif ('0_1x1_loop_infinite.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 0)
-make_simple_gif ('0_1x1_loop_once.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 1)
-make_simple_gif ('0_1x1_loop_max.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 65535)
-make_simple_gif ('0_1x1_loop_buffer.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 0, buffer_size = 1024)
-make_simple_gif ('0_1x1_loop_buffer_max.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 0, buffer_size = 4294967295)
-make_simple_gif ('0_1x1_loop_animexts.gif', 1, 1, [1], ['#000000', '#aabbcc'], loop_count = 0, use_animexts = True)
+make_simple_gif ('0_1x1_loop_infinite.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0)
+make_simple_gif ('0_1x1_loop_once.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 1)
+make_simple_gif ('0_1x1_loop_max.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 65535)
+make_simple_gif ('0_1x1_loop_buffer.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0, buffer_size = 1024)
+make_simple_gif ('0_1x1_loop_buffer_max.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0, buffer_size = 4294967295)
+make_simple_gif ('0_1x1_loop_animexts.gif', 1, 1, [1], ['#000000', '#ffffff'], loop_count = 0, use_animexts = True)
 # Netscape extension without loop field
 # Netscape extension with multiple loop fields
 
