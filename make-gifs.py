@@ -300,7 +300,7 @@ make_gif ('2x2_ffffff', 2, 2, [WHITE] * 4, palette2)
 make_gif ('3x3_ffffff', 3, 3, [WHITE] * 9, palette2)
 make_gif ('10x10_ffffff', 10, 10, [WHITE] * 100, palette2)
 
-make_gif ('2x2_colors', 2, 2, [RED, YELLOW, MAGENTA, WHITE], palette8)
+make_gif ('2x2_colors', 2, 2, [RED, GREEN, BLUE, WHITE], palette8)
 
 make_gif ('16x16_ff0000', 16, 16, [RED] * 256, palette8)
 values = []
