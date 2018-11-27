@@ -4,22 +4,22 @@ import math
 import struct
 import sys
 
-def make_code_table (colors):
+def make_code_table (code_size):
     codes = []
-    for i in range (len (colors)):
+    for i in range (2 ** (code_size - 1)):
         codes.append ((i,))
-    clear_code = len (codes)
+    clear_code = 2 ** (code_size - 1)
     eoi_code = clear_code + 1
     codes.append (clear_code)
     codes.append (eoi_code)
     return (codes, clear_code, eoi_code)
 
-def decode_lzw (colors, data, start_code_size):
+def decode_lzw (data, start_code_size):
     full_code_size = start_code_size
     values = []
     code = 0
     code_size = 0
-    (codes, clear_code, eoi_code) = make_code_table (colors)
+    (codes, clear_code, eoi_code) = make_code_table (start_code_size)
     last_code = clear_code
     for d in data:
         n_available = 8
@@ -43,7 +43,7 @@ def decode_lzw (colors, data, start_code_size):
             if code == eoi_code:
                 return values
             elif code == clear_code:
-                (codes, clear_code, eoi_code) = make_code_table (colors)
+                (codes, clear_code, eoi_code) = make_code_table (start_code_size)
                 full_code_size = start_code_size
                 last_code = clear_code
             elif code < len (codes):
@@ -55,7 +55,6 @@ def decode_lzw (colors, data, start_code_size):
                     codes.append (codes[last_code] + (codes[code][0],))
                 last_code = code
             elif code == len (codes):
-                assert (code == len (codes))
                 codes.append (codes[last_code] + (codes[last_code][0],))
                 for v in codes[-1]:
                     values.append (v)
@@ -225,8 +224,8 @@ def decode_gif (f):
                     colors = local_colors
                 codes += block
                 payload = payload[block_size:]
-            values = decode_lzw (colors, codes, lzw_code_size + 1)
-            print ('  Data (%d): %s' % (len (values), '(hidden)'))#values))
+            values = decode_lzw (codes, lzw_code_size + 1)
+            print ('  Data (%d): %s' % (len (values), values))
         elif payload[0] == 0x21:
             payload = payload[1:]
             if len (payload) < 1:
