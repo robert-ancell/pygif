@@ -82,18 +82,18 @@ def lzw_compress (values, depth = 0):
     else:
         for v in values:
             assert (v < 2**depth)
-    n_colors = 2 ** depth
+
+    # Spec says code size is minimum three
+    code_size = depth + 1
+    if code_size < 3:
+        code_size = 3
 
     codes = {}
-    for i in range (n_colors):
+    for i in range (2 ** (code_size - 1)):
         codes[(i,)] = i
-    clear_code = n_colors # FIXME: Send clear when need code 4096
-    eoi_code = n_colors + 1
-    next_code = n_colors + 2
-
-    code_size = bits_required (eoi_code)
-    #if code_size < 3:
-    #    code_size = 3
+    clear_code = 2 ** (code_size - 1) # FIXME: Send clear when need code 4096
+    eoi_code = clear_code + 1
+    next_code = clear_code + 2
 
     code = (values[0],)
     stream = [(clear_code, code_size)]
