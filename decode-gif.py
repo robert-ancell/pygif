@@ -17,8 +17,10 @@ def make_code_table (code_size):
 def decode_lzw (data, start_code_size):
     full_code_size = start_code_size
     values = []
+    first_code_is_clear = False
     code = 0
     code_size = 0
+    code_count = 0
     (codes, clear_code, eoi_code) = make_code_table (start_code_size)
     last_code = clear_code
     for d in data:
@@ -39,9 +41,14 @@ def decode_lzw (data, start_code_size):
             # Keep going until we get a full code word
             if code_size < full_code_size:
                 continue
+            code_count += 1
+
+            # Check if the first code is a clear
+            if code_count == 1 and code == clear_code:
+                first_code_is_clear = True
 
             if code == eoi_code:
-                return values
+                return (first_code_is_clear, True, values)
             elif code == clear_code:
                 (codes, clear_code, eoi_code) = make_code_table (start_code_size)
                 full_code_size = start_code_size
@@ -65,8 +72,7 @@ def decode_lzw (data, start_code_size):
             code = 0
             code_size = 0
 
-    print ('LZW without end code')
-    return values
+    return (first_code_is_clear, False, values)
 
 def get_disposal_method_string (disposal_method):
     if disposal_method == 0:
@@ -276,8 +282,13 @@ def decode_gif (f):
                     colors = local_colors
                 codes += block
                 payload = payload[block_size:]
-            values = decode_lzw (codes, lzw_code_size + 1)
-            print ('  Data (%d): %s' % (len (values), values))
+            (first_code_is_clear, has_eoi, values) = decode_lzw (codes, lzw_code_size + 1)
+            description = '%d' % len (values)
+            if not first_code_is_clear:
+                description += ', no-clear-at-start'
+            if not has_eoi:
+                description += ', no-end-of-information'
+            print ('  Data (%s): %s' % (description, values))
         elif payload[0] == 0x21:
             payload = payload[1:]
             if len (payload) < 1:

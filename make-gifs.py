@@ -143,7 +143,7 @@ def bits_required (value):
     else:
         return math.ceil (math.log2 (value + 1))
 
-def lzw_compress (values, depth = 0):
+def lzw_compress (values, depth = 0, start_with_clear = True, end_with_eoi = True):
     if depth == 0:
         max_v = 0
         for v in values:
@@ -166,7 +166,9 @@ def lzw_compress (values, depth = 0):
     next_code = clear_code + 2
 
     code = (values[0],)
-    stream = [(clear_code, code_size)]
+    stream = []
+    if start_with_clear:
+        stream.append ((clear_code, code_size))
     index = 1
     while index < len (values):
         code += (values[index],)
@@ -183,11 +185,12 @@ def lzw_compress (values, depth = 0):
             if new_code == 2 ** code_size:
                 code_size += 1
     stream.append ((codes[code], code_size))
-    stream.append ((eoi_code, code_size))
+    if end_with_eoi:
+        stream.append ((eoi_code, code_size))
     return stream
 
-def make_lzw_data (values, depth = 0):
-    codes = lzw_compress (values, depth)
+def make_lzw_data (values, depth = 0, start_with_clear = True, end_with_eoi = True):
+    codes = lzw_compress (values, depth, start_with_clear, end_with_eoi)
 
     # Write starting code size
     data = struct.pack ('B', codes[0][1] - 1)
@@ -226,7 +229,7 @@ def make_lzw_data (values, depth = 0):
 def make_trailer ():
     return b'\x3b'
 
-def make_gif (name, width, height, values, colors, background_color = 0, comment = '', loop_count = -1, buffer_size = -1, extensions = []):
+def make_gif (name, width, height, values, colors, background_color = 0, comment = '', loop_count = -1, buffer_size = -1, extensions = [], start_with_clear = True, end_with_eoi = True):
     depth = bits_required (len (colors) - 1)
     data = make_header (width, height, colors, background_color = background_color)
     if loop_count >= 0:
@@ -236,13 +239,16 @@ def make_gif (name, width, height, values, colors, background_color = 0, comment
     for e in extensions:
         data += e
     data += make_image_descriptor (width, height)
-    data += make_lzw_data (values, depth)
+    data += make_lzw_data (values, depth, start_with_clear, end_with_eoi)
     data += make_trailer ()
 
     filename = '%s.gif' % name
     open (filename, 'wb').write (data)
 
+# Single pixel images
 make_gif ('1x1_aabbcc', 1, 1, [1], ['#000000', '#aabbcc'])
+
+# Filled images of increasing sizes
 make_gif ('2x2_aabbcc', 2, 2, [1] * 4, ['#000000', '#aabbcc'])
 make_gif ('3x3_aabbcc', 3, 3, [1] * 9, ['#000000', '#aabbcc', '#000000', '#000000'])
 make_gif ('10x10_aabbcc', 10, 10, [1] * 100, ['#000000', '#aabbcc', '#000000', '#000000'])
@@ -272,6 +278,12 @@ for i in range (256):
     values.append (i)
     colors.append ('#0000%02x' % i)
 make_gif ('16x16_blues', 16, 16, values, colors)
+
+# Optional clear and end-of-information codes
+make_gif ('1x1_no_clear', 1, 1, [1], ['#000000', '#ffffff'], start_with_clear = False)
+make_gif ('1x1_no_eoi', 1, 1, [1], ['#000000', '#ffffff'], end_with_eoi = False)
+# Use 2x1 so the single byte of data contains two codes (6 bits) otherwise the decoder will read a second code due to the lack of EOI
+make_gif ('2x1_no_clear_and_eoi', 2, 1, [1, 1], ['#000000', '#ffffff'], start_with_clear = False, end_with_eoi = False)
 
 # Maximum sizes
 make_gif ('65535x1', 65535, 1, [1] * 65535, ['#000000', '#ff0000', '#00ff00', '#0000ff'])
@@ -316,7 +328,7 @@ make_gif ('1x1_unknown_application_extension', 1, 1, [1], ['#000000', '#ffffff']
 nul_app_ext = make_application_extension ('\0\0\0\0\0\0\0\0', '\0\0\0', [b'\0\0\0\0', b'\0\0\0\0'])
 make_gif ('1x1_nul_application_extension', 1, 1, [1], ['#000000', '#ffffff'], extensions = [nul_app_ext])
 
-# LZW without clear, end
+# Trailing data after end
 # Various disposal methods
 # Double frame (overwrite)
 # No global color table
