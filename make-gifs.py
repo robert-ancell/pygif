@@ -191,49 +191,51 @@ def make_lzw_data (values, depth = 0):
 def make_trailer ():
     return b'\x3b'
 
-def make_simple_gif (width, height, values, colors, background_color = 0, comment = ''):
+def make_simple_gif (filename, width, height, values, colors, background_color = 0, comment = ''):
     depth = bits_required (len (colors) - 1)
     data = make_header (width, height, colors, background_color = background_color)
     if comment != '':
         data += make_comment_extension (comment)
     data += make_image_descriptor (width, height)
     data += make_lzw_data (values, depth)
-    return data + make_trailer ()
+    data += make_trailer ()
 
-open ('0_1x1_aabbcc.gif', 'wb').write (make_simple_gif (1, 1, [1], ['#000000', '#aabbcc']))
-open ('0_2x2_aabbcc.gif', 'wb').write (make_simple_gif (2, 2, [1] * 4, ['#000000', '#aabbcc']))
-open ('0_3x3_aabbcc.gif', 'wb').write (make_simple_gif (3, 3, [1] * 9, ['#000000', '#aabbcc', '#000000', '#000000']))
-open ('0_10x10_aabbcc.gif', 'wb').write (make_simple_gif (10, 10, [1] * 100, ['#000000', '#aabbcc', '#000000', '#000000']))
+    open (filename, 'wb').write (data)
 
-open ('0_2x2_colors.gif', 'wb').write (make_simple_gif (2, 2, [0, 1, 2, 3], ['#ff0000', '#ffff00', '#ff00ff', '#ffffff']))
+make_simple_gif ('0_1x1_aabbcc.gif', 1, 1, [1], ['#000000', '#aabbcc'])
+make_simple_gif ('0_2x2_aabbcc.gif', 2, 2, [1] * 4, ['#000000', '#aabbcc'])
+make_simple_gif ('0_3x3_aabbcc.gif', 3, 3, [1] * 9, ['#000000', '#aabbcc', '#000000', '#000000'])
+make_simple_gif ('0_10x10_aabbcc.gif', 10, 10, [1] * 100, ['#000000', '#aabbcc', '#000000', '#000000'])
 
-open ('0_16x16_red.gif', 'wb').write (make_simple_gif (16, 16, [1] * 256, ['#000000', '#ff0000']))
+make_simple_gif ('0_2x2_colors.gif', 2, 2, [0, 1, 2, 3], ['#ff0000', '#ffff00', '#ff00ff', '#ffffff'])
+
+make_simple_gif ('0_16x16_red.gif', 16, 16, [1] * 256, ['#000000', '#ff0000'])
 values = []
 colors = []
 for i in range (256):
     values.append (i)
     colors.append ('#%02x0000' % i)
-open ('0_16x16_reds.gif', 'wb').write (make_simple_gif (16, 16, values, colors))
+make_simple_gif ('0_16x16_reds.gif', 16, 16, values, colors)
 
-open ('0_16x16_green.gif', 'wb').write (make_simple_gif (16, 16, [1] * 256, ['#000000', '#00ff00']))
+make_simple_gif ('0_16x16_green.gif', 16, 16, [1] * 256, ['#000000', '#00ff00'])
 values = []
 colors = []
 for i in range (256):
     values.append (i)
     colors.append ('#00%02x00' % i)
-open ('0_16x16_greens.gif', 'wb').write (make_simple_gif (16, 16, values, colors))
+make_simple_gif ('0_16x16_greens.gif', 16, 16, values, colors)
 
-open ('0_16x16_blue.gif', 'wb').write (make_simple_gif (16, 16, [1] * 256, ['#000000', '#0000ff']))
+make_simple_gif ('0_16x16_blue.gif', 16, 16, [1] * 256, ['#000000', '#0000ff'])
 values = []
 colors = []
 for i in range (256):
     values.append (i)
     colors.append ('#0000%02x' % i)
-open ('0_16x16_blues.gif', 'wb').write (make_simple_gif (16, 16, values, colors))
+make_simple_gif ('0_16x16_blues.gif', 16, 16, values, colors)
 
 # Maximum sizes
-open ('0_65535x1.gif', 'wb').write (make_simple_gif (65535, 1, [1] * 65535, ['#000000', '#ff0000', '#00ff00', '#0000ff']))
-open ('0_1x65535.gif', 'wb').write (make_simple_gif (1, 65535, [1] * 65535, ['#000000', '#ff0000', '#00ff00', '#0000ff']))
+make_simple_gif ('0_65535x1.gif', 65535, 1, [1] * 65535, ['#000000', '#ff0000', '#00ff00', '#0000ff'])
+make_simple_gif ('0_1x65535.gif', 1, 65535, [1] * 65535, ['#000000', '#ff0000', '#00ff00', '#0000ff'])
 
 # Uses maximum 4095 codes
 import random
@@ -243,10 +245,10 @@ for i in range (300*300):
     m = 2 ** 32
     seed = (1103515245 * seed + 12345) % m
     values.append (seed >> 31)
-open ('0_300x300_4095_codes.gif', 'wb').write (make_simple_gif (300, 300, values, ['#000000', '#aabbcc']))
+make_simple_gif ('0_300x300_4095_codes.gif', 300, 300, values, ['#000000', '#aabbcc'])
 
 # Comments
-open ('0_1x1_comment.gif', 'wb').write (make_simple_gif (1, 1, [1], ['#000000', '#aabbcc'], comment = 'Hello World!'))
+make_simple_gif ('0_1x1_comment.gif', 1, 1, [1], ['#000000', '#aabbcc'], comment = 'Hello World!')
 
 # LZW without clear, end
 # Various disposal methods
