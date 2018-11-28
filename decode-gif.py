@@ -17,6 +17,7 @@ def make_code_table (code_size):
 def decode_lzw (data, start_code_size, max_code_size = 12):
     values = []
     first_code_is_clear = False
+    clear_count = 0
     code = 0
     code_bits = 0
     code_count = 0
@@ -44,11 +45,14 @@ def decode_lzw (data, start_code_size, max_code_size = 12):
             code_count += 1
 
             # Check if the first code is a clear
-            if code_count == 1 and code == clear_code:
-                first_code_is_clear = True
+            if code == clear_code:
+                if code_count == 1:
+                    first_code_is_clear = True
+                else:
+                    clear_count += 1
 
             if code == eoi_code:
-                return (first_code_is_clear, True, values, data[index + 1:])
+                return (first_code_is_clear, clear_count, True, values, data[index + 1:])
             elif code == clear_code:
                 code_size = start_code_size
                 (codes, clear_code, eoi_code) = make_code_table (code_size)
@@ -76,7 +80,7 @@ def decode_lzw (data, start_code_size, max_code_size = 12):
             code = 0
             code_bits = 0
 
-    return (first_code_is_clear, False, values, b'')
+    return (first_code_is_clear, clear_count, False, values, b'')
 
 def get_disposal_method_string (disposal_method):
     if disposal_method == 0:
@@ -298,10 +302,12 @@ def decode_gif (f):
                     colors = local_colors
                 codes += block
                 payload = payload[block_size:]
-            (first_code_is_clear, has_eoi, values, extra_data) = decode_lzw (codes, lzw_code_size + 1)
+            (first_code_is_clear, clear_count, has_eoi, values, extra_data) = decode_lzw (codes, lzw_code_size + 1)
             description = '%d' % len (values)
             if interlace:
                 description += ', interlace'
+            if clear_count > 0:
+                description += ', %d clears' % clear_count
             if not first_code_is_clear:
                 description += ', no-clear-at-start'
             if not has_eoi:
