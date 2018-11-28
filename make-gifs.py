@@ -446,6 +446,11 @@ make_gif ('transparent', 'four-colors-transparent', 2, 2, palette8,
           [ make_graphic_control_extension (has_transparent = True, transparent_color = RED),
             make_image (2, 2, 3, [RED, GREEN, BLUE, WHITE]) ])
 
+# Invalid transparency color
+make_gif ('invalid-transparent', 'four-colors', 2, 2, palette8,
+          [ make_graphic_control_extension (has_transparent = True, transparent_color = 255),
+            make_image (2, 2, 3, [RED, GREEN, BLUE, WHITE]) ])
+
 # Loops
 make_gif ('loop-infinite', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 0)
 make_gif ('loop-once', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 1)
