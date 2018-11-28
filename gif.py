@@ -10,6 +10,9 @@ class Block:
         self.offset = offset
         self.length = length
 
+    def get_data (self):
+        return self.reader.buffer[self.offset: self.offset + self.length]
+
 class Image (Block):
     def __init__ (self, reader, offset, length, left, top, width, height, color_table, color_table_sorted, interlace, lzw_min_code_size):
         Block.__init__ (self, reader, offset, length)
@@ -29,12 +32,13 @@ class Image (Block):
         for offset in subblock_offsets:
             length = self.reader.buffer[offset]
             data += self.reader.buffer[offset + 1: offset + 1 + length]
-        (_, _, _, values, _) = lzw_decode (data, self.lzw_min_code_size + 1)
+        (_, _, _, values, _) = lzw_decode (data, self.lzw_min_code_size)
         return values
 
 class Extension (Block):
-    def __init__ (self, reader, offset, length):
+    def __init__ (self, reader, offset, length, label):
         Block.__init__ (self, reader, offset, length)
+        self.label = label
 
     def get_subblocks (self):
         (subblock_offsets, _) = get_subblocks (self.reader.buffer, self.offset + 2)
@@ -145,7 +149,7 @@ class Reader:
                         (red, green, blue) = struct.unpack ('BBB', self.buffer[offset: offset + 3])
                         color_table.append ((red, green, blue))
 
-                block = Image (self, block_start, block_length, left, top, width, height, color_table, color_table_sorted, interlace, lzw_min_code_size)
+                block = Image (self, block_start, block_length, left, top, width, height, color_table, color_table_sorted, interlace, lzw_min_code_size + 1)
                 self.blocks.append (block)
 
             # Extension
@@ -161,7 +165,7 @@ class Reader:
                     return
                 block_length += subblocks_length
 
-                block = Extension (self, block_start, block_length)
+                block = Extension (self, block_start, block_length, label)
                 self.blocks.append (block)
 
             # Trailer
