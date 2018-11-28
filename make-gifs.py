@@ -410,26 +410,29 @@ make_gif ('max-width', 'max-width', 65535, 1, palette8, [ filled_image (65535, 1
 make_gif ('max-height', 'max-height', 1, 65535, palette8, [ filled_image (1, 65535, 3, WHITE) ])
 make_gif ('max-size', 'nocrash', 65535, 65535, palette8, [])
 
-import random
+# Generate a random image to test LZW compression
+random_width = 100
+random_height = 100
 values = []
 seed = 1
-for i in range (300*300):
+for i in range (random_width*random_height):
     m = 2 ** 32
     seed = (1103515245 * seed + 12345) % m
-    values.append (seed >> 31)
+    values.append (math.floor (16 * seed / m))
+    assert (values[-1] < 16)
 
 # Clear code when hit 12 bit limit
-make_gif ('4095-codes-clear', '4095-codes', 300, 300, palette2, [make_image (300, 300, 1, values)])
+make_gif ('4095-codes-clear', '4095-codes', random_width, random_height, palette16, [make_image (random_width, random_height, 4, values)])
 
 # Stop adding code words when hit code 12 bit limit
-make_gif ('4095-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 1, values, clear_on_max_width = False)])
+make_gif ('4095-codes', '4095-codes', random_width, random_height, palette16, [make_image (random_width, random_height, 4, values, clear_on_max_width = False)])
 
 # Have lots of clears by having a small code bit limit
-make_gif ('255-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 1, values, max_width = 8)])
+make_gif ('255-codes', '4095-codes', random_width, random_height, palette16, [make_image (random_width, random_height, 4, values, max_width = 8)])
 
 # Use a minimum code size
-make_gif ('large-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 1, values, start_code_size = 8)])
-make_gif ('max-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 1, values, start_code_size = 12)])
+make_gif ('large-codes', '4095-codes', random_width, random_height, palette16, [make_image (random_width, random_height, 4, values, start_code_size = 8)])
+make_gif ('max-codes', '4095-codes', random_width, random_height, palette16, [make_image (random_width, random_height, 4, values, start_code_size = 12)])
 
 # Transparent image
 make_gif ('transparent', 'four-colors-transparent', 2, 2, palette8,
