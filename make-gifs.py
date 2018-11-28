@@ -465,6 +465,18 @@ make_gif ('animation', 'animation', 2, 2, palette2,
             make_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK]) ],
           loop_count = 0)
 
+# Animation with variable frame speed
+make_gif ('animation-speed', 'animation', 2, 2, palette2,
+          [ make_graphic_control_extension (delay_time = 25),
+            make_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK]),
+            make_graphic_control_extension (delay_time = 50),
+            make_image (2, 2, 1, [BLACK, WHITE, BLACK, BLACK]),
+            make_graphic_control_extension (delay_time = 100),
+            make_image (2, 2, 1, [BLACK, BLACK, BLACK, WHITE]),
+            make_graphic_control_extension (delay_time = 200),
+            make_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK]) ],
+          loop_count = 0)
+
 # Animated image with subimages
 # NOTE: RESTORE_BG appears to be interpreted as transparency
 make_gif ('animation-subimage', 'animation', 2, 2, palette2,
