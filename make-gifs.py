@@ -437,6 +437,14 @@ make_gif ('255-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 
 make_gif ('large-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 1, values, start_code_size = 8)])
 make_gif ('max-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 1, values, start_code_size = 12)])
 
+# Animated image
+make_gif ('animation', 'animation', 2, 1, palette2,
+          [ make_graphic_control_extension (delay_time = 50),
+            make_image (2, 1, 1, [BLACK, WHITE]),
+            make_graphic_control_extension (delay_time = 50),
+            make_image (2, 1, 1, [WHITE, BLACK]) ],
+          loop_count = 0)
+
 # Comments
 make_gif ('comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), comment = 'Hello World!')
 make_gif ('large-comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), comment = ' '.join (['Hello World!'] * 1000))
