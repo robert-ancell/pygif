@@ -15,13 +15,13 @@ def make_code_table (code_size):
     return (codes, clear_code, eoi_code)
 
 def decode_lzw (data, start_code_size):
-    code_size = start_code_size
     values = []
     first_code_is_clear = False
     code = 0
     code_bits = 0
     code_count = 0
-    (codes, clear_code, eoi_code) = make_code_table (start_code_size)
+    code_size = start_code_size
+    (codes, clear_code, eoi_code) = make_code_table (code_size)
     last_code = clear_code
     for (index, d) in enumerate (data):
         n_available = 8
@@ -50,8 +50,8 @@ def decode_lzw (data, start_code_size):
             if code == eoi_code:
                 return (first_code_is_clear, True, values, data[index + 1:])
             elif code == clear_code:
-                (codes, clear_code, eoi_code) = make_code_table (start_code_size)
                 code_size = start_code_size
+                (codes, clear_code, eoi_code) = make_code_table (code_size)
                 last_code = clear_code
             elif code < len (codes):
                 for v in codes[code]:
