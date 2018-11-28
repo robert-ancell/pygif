@@ -167,6 +167,7 @@ def make_code_table (code_size):
     return (codes, clear_code, eoi_code, next_code)
 
 def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi = True, max_width = 12, clear_on_max_width = True):
+    assert (start_code_size <= max_width)
     assert (3 <= max_width <= 12)
 
     code_size = start_code_size
@@ -182,6 +183,7 @@ def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi
             continue
 
         # If there are available bits, then add a new code
+        new_code = 0
         if next_code < 2 ** max_width:
             new_code = next_code
             next_code += 1
@@ -416,6 +418,10 @@ make_gif ('4095-codes', '4095-codes', 300, 300, [make_image (300, 300, 1, values
 
 # Have lots of clears by having a small code bit limit
 make_gif ('255-codes', '4095-codes', 300, 300, [make_image (300, 300, 1, values, max_width = 8)], palette2)
+
+# Use a minimum code size
+make_gif ('large-codes', '4095-codes', 300, 300, [make_image (300, 300, 1, values, start_code_size = 8)], palette2)
+make_gif ('max-codes', '4095-codes', 300, 300, [make_image (300, 300, 1, values, start_code_size = 12)], palette2)
 
 # Comments
 make_gif ('comment', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, comment = 'Hello World!')
