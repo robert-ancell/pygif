@@ -466,9 +466,9 @@ make_gif ('animation', 'animation', 2, 2, palette2,
           loop_count = 0)
 
 # Animated image with subimages
+# NOTE: RESTORE_BG appears to be interpreted as transparency
 make_gif ('animation-subimage', 'animation', 2, 2, palette2,
-          [ make_image (2, 2, 1, [BLACK, BLACK, BLACK, BLACK]),
-            make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
+          [ make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 0, 0),
             make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 1, 0),
@@ -480,9 +480,8 @@ make_gif ('animation-subimage', 'animation', 2, 2, palette2,
 
 # Background with animated subimages that add together
 make_gif ('animation-subimage-add', 'animation-fill', 2, 2, palette2,
-          [ make_image (2, 2, 1, [BLACK, BLACK, BLACK, BLACK]),
-            make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
-            make_image (1, 1, 1, [WHITE], 0, 0),
+          [ make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
+            make_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK]),
             make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 1, 0),
             make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
@@ -491,7 +490,7 @@ make_gif ('animation-subimage-add', 'animation-fill', 2, 2, palette2,
             make_image (1, 1, 1, [WHITE], 0, 1) ],
           loop_count = 0)
 
-# Background with animated subimages that add together
+# Background with animated subimages that move over initial background
 make_gif ('animation-subimage-move', 'animation', 2, 2, palette2,
           [ make_image (2, 2, 1, [BLACK, BLACK, BLACK, BLACK]),
             make_graphic_control_extension (DISPOSAL_RESTORE_PREV, delay_time = 50),
