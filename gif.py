@@ -30,8 +30,7 @@ class Image (Block):
         (subblock_offsets, _) = get_subblocks (self.reader.buffer, offset)
         data = b''
         for offset in subblock_offsets:
-            length = self.reader.buffer[offset]
-            data += self.reader.buffer[offset + 1: offset + 1 + length]
+            data == get_subblock (self.reader.buffer, offset)
         (_, _, _, values, _) = lzw_decode (data, self.lzw_min_code_size)
         return values
 
@@ -46,9 +45,62 @@ class Extension (Block):
             return []
         subblocks = []
         for offset in subblock_offsets:
-            length = self.reader.buffer[offset]
-            subblocks.append (self.reader.buffer[offset + 1: offset + 1 + length])
+            subblocks.append (get_subblock (self.reader.buffer, offset))
         return subblocks
+
+class PlainTextExtension (Extension):
+    def __init__ (self, reader, offset, length, left, top, width, height, cell_width, cell_height, foreground_color, background_color):
+        Extension.__init__ (self, reader, offset, length, 0x01)
+        self.left = left
+        self.top = top
+        self.width = width
+        self.height = height
+        self.cell_width = cell_width
+        self.cell_height = cell_height
+        self.foreground_color = foreground_color
+        self.background_color = background_color
+
+    def get_text (self, encoding = 'ascii'):
+        data = b''
+        for subblock in self.get_subblocks ()[1:]:
+            data += subblock
+        return data.decode (encoding)
+
+class GraphicControlExtension (Extension):
+    def __init__ (self, reader, offset, length, disposal_method, delay_time, user_input, has_transparent, transparent_color):
+        Extension.__init__ (self, reader, offset, length, 0xf9)
+        self.disposal_method = disposal_method
+        self.delay_time = delay_time
+        self.user_input = user_input
+        self.has_transparent = has_transparent
+        self.transparent_color = transparent_color
+
+class CommentExtension (Extension):
+    def __init__ (self, reader, offset, length):
+        Extension.__init__ (self, reader, offset, length, 0xfe)
+
+    def get_comment (self, encoding = 'utf-8'):
+        data = b''
+        for subblock in self.get_subblocks ()[1:]:
+            data += subblock
+        return data.decode (encoding)
+
+class ApplicationExtension (Extension):
+    def __init__ (self, reader, offset, length):
+        Extension.__init__ (self, reader, offset, length, 0xff)
+        subblocks = self.get_subblocks ()
+        if len (subblocks) > 0 and len (subblocks[0]) == 11:
+            self.identifier = subblocks[0][:8].decode ('ascii')
+            self.authentication_code = subblocks[0][8:11].decode ('ascii')
+        else:
+            self.identifier = ''
+            self.authentication_code = ''
+
+    def is_valid (self):
+        return self.identifier != ''
+
+    def get_data (self):
+        return self.get_subblocks ()[1:]
 
 class Trailer (Block):
     def __init__ (self, reader, offset, length):
@@ -72,6 +124,7 @@ class Reader:
         self.color_table_sorted = False
         self.background_color = 0
         self.pixel_aspect_ratio = 0
+        self.color_table = []
         self.blocks = []
 
     def feed (self, data):
@@ -84,11 +137,9 @@ class Reader:
             has_color_table = flags & 0x80 != 0
             self.original_depth = ((flags >> 4) & 0x7) + 1
             self.color_table_sorted = flags & 0x08 != 0
-            self.color_table_size = flags & 0x7
+            color_table_size = flags & 0x7
             if has_color_table:
-                self.color_table = [ (0, 0, 0) ] * 2 ** (self.color_table_size + 1)
-            else:
-                self.color_table = []
+                self.color_table = [ (0, 0, 0) ] * (2 ** (color_table_size + 1))
 
         # Read color table
         n_colors = len (self.color_table)
@@ -97,7 +148,7 @@ class Reader:
             for i in range (n_colors):
                 offset = 13 + i * 3
                 (red, green, blue) = struct.unpack ('BBB', self.buffer[offset: offset + 3])
-                self.color_table.append ((red, green, blue))
+                self.color_table[i] = (red, green, blue)
 
         # Read blocks
         while not self.is_complete () and not self.has_unknown_block ():
@@ -165,7 +216,26 @@ class Reader:
                     return
                 block_length += subblocks_length
 
-                block = Extension (self, block_start, block_length, label)
+                if len (subblock_offsets) > 0:
+                    first_subblock = get_subblock (self.buffer, subblock_offsets[0])
+                else:
+                    first_subblock = b''
+
+                if label == 0x01 and len (first_subblock) == 12:
+                    (left, top, width, height, cell_width, cell_height, foreground_color, background_color) = struct.unpack ('<HHHHBBBB', subblocks[0])
+                    block = PlainTextExtension (self, block_start, block_length, left, top, width, height, cell_width, cell_height, foreground_color, background_color)
+                elif label == 0xf9 and len (first_subblock) == 4:
+                    (flags, delay_time, transparent_color) = struct.unpack ('<BHB', first_subblock)
+                    disposal_method = flags >> 2 & 0x7
+                    user_input = flags & 0x02 != 0
+                    has_transparent = flags & 0x01 != 0
+                    block = GraphicControlExtension (self, block_start, block_length, disposal_method, delay_time, user_input, has_transparent, transparent_color)
+                elif label == 0xfe:
+                    block = CommentExtension (self, block_start, block_length)
+                elif label == 0xff:
+                    block = ApplicationExtension (self, block_start, block_length)
+                else:
+                    block = Extension (self, block_start, block_length, label)
                 self.blocks.append (block)
 
             # Trailer
@@ -207,6 +277,10 @@ def get_subblocks (data, offset):
         n_required += subblock_size
         if n_available < n_required:
             return (None, 0)
+
+def get_subblock (data, offset):
+    length = data[offset]
+    return data[offset + 1: offset + 1 + length]
 
 def lzw_decode (data, start_code_size, max_code_size = 12):
     values = []
