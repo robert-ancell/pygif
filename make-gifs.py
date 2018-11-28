@@ -379,6 +379,7 @@ make_gif ('no-clear-and-eoi', 'white-hline2', 2, 1, [make_image (2, 1, 3, [WHITE
 # Maximum sizes
 make_gif ('max-width', 'max-width', 65535, 1, single_image (65535, 1, 3, WHITE), palette8)
 make_gif ('max-height', 'max-height', 1, 65535, single_image (1, 65535, 3, WHITE), palette8)
+make_gif ('max-size', 'nocrash', 65535, 65535, [], palette8)
 
 # Uses maximum 4095 codes
 import random
