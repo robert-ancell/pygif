@@ -305,19 +305,14 @@ make_gif ('depth6', 'white-dot', 1, 1, dot_image (6, 63), grays6)
 make_gif ('depth7', 'white-dot', 1, 1, dot_image (7, 127), grays7)
 make_gif ('depth8', 'white-dot', 1, 1, dot_image (8, 255), grays8)
 
-# Subimages
-make_gif ('subimage', 'subimage', 3, 3, [make_image (1, 1, 3, [RED], left = 1, top = 1)], palette8, background_color = WHITE)
-make_gif ('subimage-overlap', 'subimage-overlap', 2, 2, [make_image (2, 2, 3, [RED] * 4, left = 1, top = 1)], palette8, background_color = WHITE)
-make_gif ('subimage-outside', 'subimage-outside', 2, 2, [make_image (2, 2, 3, [RED] * 4, left = 2, top = 2)], palette8, background_color = WHITE)
-# Subimage overlaps / outside
+# Image with different colours in each pixel
+make_gif ('four-colors', 'four-colors', 2, 2, [make_image (2, 2, 8, [RED, GREEN, BLUE, WHITE])], palette8)
 
 # Image with no data
 make_gif ('no-data', 'white-dot', 1, 1, [], palette2, background_color = 1)
 
 # Image with invalid background value
 make_gif ('invalid-background', 'white-dot', 1, 1, dot_image (2, WHITE), palette2, background_color = 255)
-
-make_gif ('four-colors', 'four-colors', 2, 2, [make_image (2, 2, 8, [RED, GREEN, BLUE, WHITE])], palette8)
 
 values = []
 colors = []
@@ -339,6 +334,21 @@ for i in range (256):
     values.append (i)
     colors.append ('#0000%02x' % i)
 make_gif ('all-blues', 'all-blues', 16, 16, [make_image (16, 16, 8, values)], colors)
+
+# Images that don't cover the background
+make_gif ('image-inside-bg', 'image-indside-bg', 3, 3, [make_image (1, 1, 3, [RED], left = 1, top = 1)], palette8, background_color = WHITE)
+make_gif ('image-overlap-bg', 'image-overlap-bg', 2, 2, [make_image (2, 2, 3, [RED] * 4, left = 1, top = 1)], palette8, background_color = WHITE)
+make_gif ('image-outside-bg', 'image-outside-bg', 2, 2, [make_image (2, 2, 3, [RED] * 4, left = 2, top = 2)], palette8, background_color = WHITE)
+
+# Multiple images in different places
+make_gif ('images-combine', 'four-colors', 2, 2, [make_image (1, 1, 3, [RED],   left = 0, top = 0),
+                                                  make_image (1, 1, 3, [GREEN], left = 1, top = 0),
+                                                  make_image (1, 1, 3, [BLUE],  left = 0, top = 1),
+                                                  make_image (1, 1, 3, [WHITE], left = 1, top = 1)], palette8, background_color = WHITE)
+
+# Multiple images overlapping
+make_gif ('images-overlap', 'white-dot', 1, 1, [make_image (1, 1, 3, [RED]),
+                                                make_image (1, 1, 3, [WHITE])], palette8)
 
 # Image with additional values
 make_gif ('additional-data', 'white-dot', 1, 1, single_image (10, 10, 3, WHITE), palette8)
@@ -395,7 +405,6 @@ make_gif ('nul-application-extension', 'white-dot', 1, 1, dot_image (3, WHITE), 
 
 # Trailing data after end
 # Various disposal methods
-# Double frame (overwrite)
 # No global color table
 # Background color outside color table
 # Local color table
