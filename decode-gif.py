@@ -173,6 +173,23 @@ def decode_extension (label, blocks):
                     print ('  Buffer Size: %d' % buffer_size)
                 else:
                     print ('  Sub-Block %d: %s' % (block[0], repr (block[1:])))
+        elif identifier == 'XMP Data':
+            data = b''
+            description = ''
+            for block in blocks[1:]:
+                data += block
+            magic_trailer = b'\x01'
+            for i in range (255, -1, -1):
+                magic_trailer += struct.pack ('B', i)
+            if data.endswith (magic_trailer):
+                data = data[:-len (magic_trailer)]
+            else:
+                description = ' (no-magic-trailer)'
+
+            print ('XMP Data Extension:')
+            if authentication_code != 'XMP':
+                print ('  Authentication Code: %s' % repr (authentication_code))
+            print ('  Metadata%s: %s' % (description, repr (data)))
         else:
             print ('Application Extension:')
             print ('  Application Identifier: %s' % repr (identifier))
