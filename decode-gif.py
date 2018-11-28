@@ -215,7 +215,7 @@ def decode_gif (f):
             (red, green, blue) = struct.unpack ('BBB', color_map[offset: offset + 3])
             global_colors.append ('#%02x%02x%02x' % (red, green, blue))
     def get_color (colors, index):
-        if 0 <= index <= len (colors):
+        if 0 <= index < len (colors):
             return colors[index]
         else:
             return 'INVALID'
@@ -229,11 +229,13 @@ def decode_gif (f):
         if color_table_sorted:
             description += ', sorted'
         print ('Colors (%s): %s' % (description, ', '.join (global_colors)))
+        print ('Background Color: %s (%d)' % (get_color (global_colors, background_color), background_color))
     elif color_table_size != 0:
-        print ('Color Table Size: %s' % color_table_size)
+        print ('Color Table Size: %d' % color_table_size)
         if color_table_sorted:
             print ('Color Table Sorted: %s' % str (color_table_sorted))
-    print ('Background Color: %s (%d)' % (get_color (global_colors, background_color), background_color))
+        if background_color != 0:
+            print ('Background Color: %d' % background_color)
 
     while len (payload) > 0:
         if payload[0] == 0x2c:
@@ -263,7 +265,7 @@ def decode_gif (f):
                     offset = i * 3
                     (red, green, blue) = struct.unpack ('BBB', color_map[offset: offset + 3])
                     local_colors.append ('#%02x%02x%02x' % (red, green, blue))
-                print ('Colors (%d): %s' % (len (local_colors), ', '.join (local_colors)))
+                print ('  Colors (%d): %s' % (len (local_colors), ', '.join (local_colors)))
             else:
                 if color_table_size != 0:
                     print ('  Color Table Size: %s' % color_table_size)

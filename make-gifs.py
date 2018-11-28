@@ -322,6 +322,12 @@ make_gif ('depth8', 'white-dot', 1, 1, dot_image (8, 255), grays8)
 # Image with different colours in each pixel
 make_gif ('four-colors', 'four-colors', 2, 2, [make_image (2, 2, 8, [RED, GREEN, BLUE, WHITE])], palette8)
 
+# Local color table overrides global one
+make_gif ('local-color-table', 'white-dot', 1, 1, [make_image (1, 1, 1, [1], colors = ['#0000ff', '#ffffff'])], ['#ff0000', '#00ff00'])
+
+# Global color table not needed if have local one
+make_gif ('no-global-color-table', 'white-dot', 1, 1, [make_image (1, 1, 1, [1], colors = ['#0000ff', '#ffffff'])], [])
+
 # Image with no data (just shows background)
 make_gif ('no-data', 'white-dot', 1, 1, [], palette2, background_color = WHITE)
 
@@ -421,8 +427,6 @@ nul_app_ext = make_application_extension ('\0\0\0\0\0\0\0\0', '\0\0\0', [b'\0\0\
 make_gif ('nul-application-extension', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, extensions = [nul_app_ext])
 
 # Various disposal methods
-# No global color table
-# Local color table
 # Animation
 
 # Regenerate the sample image from http://giflib.sourceforge.net/whatsinagif/
