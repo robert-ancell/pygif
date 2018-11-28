@@ -23,7 +23,7 @@ def make_header (width, height, colors, original_depth = 8, header = HEADER_89A,
         flags |= 0x08
     return struct.pack ('<6sHHBBB', header, width, height, flags, background_color, pixel_aspect_ratio) + make_color_table (colors)
 
-def make_image (width, height, depth, values, left = 0, top = 0, colors = [], interlace = False, colors_sorted = False, reserved = 0, start_code_size = -1, start_with_clear = True, end_with_eoi = True, extra_data = b''):
+def make_image (width, height, depth, values, left = 0, top = 0, colors = [], interlace = False, colors_sorted = False, reserved = 0, start_code_size = -1, start_with_clear = True, end_with_eoi = True, clear_on_max_width = True, extra_data = b''):
     assert (0 <= width <= 65535)
     assert (0 <= height <= 65535)
     assert (0 <= left <= 65535)
@@ -54,7 +54,7 @@ def make_image (width, height, depth, values, left = 0, top = 0, colors = [], in
         # Spec says code size is minimum three
         if start_code_size < 3:
             start_code_size = 3
-    data += make_lzw_data (values, start_code_size, start_with_clear = start_with_clear, end_with_eoi = end_with_eoi, extra_data = extra_data)
+    data += make_lzw_data (values, start_code_size, start_with_clear = start_with_clear, end_with_eoi = end_with_eoi, clear_on_max_width = clear_on_max_width, extra_data = extra_data)
 
     return data
 
@@ -166,7 +166,7 @@ def make_code_table (code_size):
     next_code = clear_code + 2
     return (codes, clear_code, eoi_code, next_code)
 
-def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi = True):
+def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi = True, clear_on_max_width = True):
     code_size = start_code_size
     (codes, clear_code, eoi_code, next_code) = make_code_table (code_size)
 
@@ -190,13 +190,19 @@ def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi
 
         if new_code == 2 ** code_size:
             code_size += 1
+
+        # Clear when out of codes
+        if next_code == 2 ** 12 and clear_on_max_width:
+            stream.append ((clear_code, code_size))
+            code_size = start_code_size
+            (codes, clear_code, eoi_code, next_code) = make_code_table (code_size)
     stream.append ((codes[code], code_size))
     if end_with_eoi:
         stream.append ((eoi_code, code_size))
     return stream
 
-def make_lzw_data (values, start_code_size, start_with_clear = True, end_with_eoi = True, extra_data = b''):
-    codes = lzw_compress (values, start_code_size, start_with_clear, end_with_eoi)
+def make_lzw_data (values, start_code_size, start_with_clear = True, end_with_eoi = True, clear_on_max_width = True, extra_data = b''):
+    codes = lzw_compress (values, start_code_size, start_with_clear, end_with_eoi, clear_on_max_width)
 
     # Write starting code size
     data = struct.pack ('B', codes[0][1] - 1)
@@ -392,7 +398,7 @@ make_gif ('max-width', 'max-width', 65535, 1, single_image (65535, 1, 3, WHITE),
 make_gif ('max-height', 'max-height', 1, 65535, single_image (1, 65535, 3, WHITE), palette8)
 make_gif ('max-size', 'nocrash', 65535, 65535, [], palette8)
 
-# Uses maximum 4095 codes
+# Max code is 12 bit, check when no more codes added or clear called
 import random
 values = []
 seed = 1
@@ -400,7 +406,8 @@ for i in range (300*300):
     m = 2 ** 32
     seed = (1103515245 * seed + 12345) % m
     values.append (seed >> 31)
-make_gif ('4095-codes', '4095-codes', 300, 300, [make_image (300, 300, 1, values)], palette2)
+make_gif ('4095-codes', '4095-codes', 300, 300, [make_image (300, 300, 1, values, clear_on_max_width = False)], palette2)
+make_gif ('4095-codes-clear', '4095-codes', 300, 300, [make_image (300, 300, 1, values)], palette2)
 
 # Comments
 make_gif ('comment', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, comment = 'Hello World!')
