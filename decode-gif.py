@@ -250,7 +250,8 @@ def decode_gif (f):
             color_table_sorted = flags & 0x20 != 0
             color_table_size = flags & 0x7
             print ('Image:')
-            print ('  Position: %d,%d' % (left, top))
+            if (left, top) != (0, 0):
+                print ('  Position: %d,%d' % (left, top))
             print ('  Size: %dx%d' % (width, height))
             print ('  Interlace: %s' % str (interlace))
             local_colors = []
