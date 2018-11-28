@@ -56,8 +56,6 @@ def decode_lzw (data, start_code_size):
             elif code < len (codes):
                 for v in codes[code]:
                     values.append (v)
-                # Bug in gdk-pixbuf is assuming clear code is at start?
-                # Bug in gdk-pixbuf is stopping adding codes after 4095?
                 if last_code != clear_code and len (codes) < 4095:
                     codes.append (codes[last_code] + (codes[code][0],))
                 last_code = code
@@ -167,8 +165,8 @@ def decode_extension (label, blocks):
                     print ('  Sub-Block %d: %s' % (block[0], repr (block[1:])))
         else:
             print ('Application Extension:')
-            print ('  Application Identifier: %s' % identifier)
-            print ('  Application Authentication Code: %s' % authentication_code)
+            print ('  Application Identifier: %s' % repr (identifier))
+            print ('  Application Authentication Code: %s' % repr (authentication_code))
             for block in blocks[1:]:
                 print ('  Data: %s' % repr (block))
     else:
@@ -253,7 +251,6 @@ def decode_gif (f):
             if (left, top) != (0, 0):
                 print ('  Position: %d,%d' % (left, top))
             print ('  Size: %dx%d' % (width, height))
-            print ('  Interlace: %s' % str (interlace))
             local_colors = []
             if has_color_table:
                 n_colors = 2 ** (color_table_size + 1)
@@ -297,6 +294,8 @@ def decode_gif (f):
                 payload = payload[block_size:]
             (first_code_is_clear, has_eoi, values, extra_data) = decode_lzw (codes, lzw_code_size + 1)
             description = '%d' % len (values)
+            if interlace:
+                description += ', interlace'
             if not first_code_is_clear:
                 description += ', no-clear-at-start'
             if not has_eoi:
