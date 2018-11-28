@@ -23,7 +23,7 @@ def make_header (width, height, colors, original_depth = 8, header = HEADER_89A,
         flags |= 0x08
     return struct.pack ('<6sHHBBB', header, width, height, flags, background_color, pixel_aspect_ratio) + make_color_table (colors)
 
-def make_image (width, height, depth, values, left = 0, top = 0, colors = [], interlace = False, colors_sorted = False, reserved = 0, start_code_size = -1, start_with_clear = True, end_with_eoi = True):
+def make_image (width, height, depth, values, left = 0, top = 0, colors = [], interlace = False, colors_sorted = False, reserved = 0, start_code_size = -1, start_with_clear = True, end_with_eoi = True, extra_data = b''):
     assert (0 <= width <= 65535)
     assert (0 <= height <= 65535)
     assert (0 <= left <= 65535)
@@ -54,7 +54,7 @@ def make_image (width, height, depth, values, left = 0, top = 0, colors = [], in
         # Spec says code size is minimum three
         if start_code_size < 3:
             start_code_size = 3
-    data += make_lzw_data (values, start_code_size, start_with_clear = start_with_clear, end_with_eoi = end_with_eoi)
+    data += make_lzw_data (values, start_code_size, start_with_clear = start_with_clear, end_with_eoi = end_with_eoi, extra_data = extra_data)
 
     return data
 
@@ -190,7 +190,7 @@ def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi
         stream.append ((eoi_code, code_size))
     return stream
 
-def make_lzw_data (values, start_code_size, start_with_clear = True, end_with_eoi = True):
+def make_lzw_data (values, start_code_size, start_with_clear = True, end_with_eoi = True, extra_data = b''):
     codes = lzw_compress (values, start_code_size, start_with_clear, end_with_eoi)
 
     # Write starting code size
@@ -217,6 +217,18 @@ def make_lzw_data (values, start_code_size, start_with_clear = True, end_with_eo
         block += struct.pack ('B', octet)
     if len (block) > 0:
         blocks.append (block)
+
+    # Add any extra data to the end
+    if len (extra_data) > 0:
+        last_block = blocks[-1]
+        n_available = 255 - len (last_block)
+        if n_available > 0:
+            last_block += extra_data[:n_available]
+            extra_data = extra_data[n_available:]
+            blocks[-1] = last_block
+        while len (extra_data) > 0:
+            blocks.append (extra_data[:255])
+            extra_data = extra_data[255:]
 
     # Terminate with an empty block
     blocks.append (b'')
@@ -355,6 +367,9 @@ make_gif ('images-overlap', 'white-dot', 1, 1, [make_image (1, 1, 3, [RED]),
 make_gif ('additional-data', 'white-dot', 1, 1, single_image (10, 10, 3, WHITE), palette8)
 #make_gif ('additional-data-after-eoi', 'white-dot', 1, 1, single_image (10, 10, 3, WHITE), palette8)
 
+# Addtional data after end-of-information
+make_gif ('extra-data', 'white-dot', 1, 1, [make_image (1, 1, 3, [WHITE], extra_data = b'HIDDEN MESSAGES')], palette8)
+
 # Optional clear and end-of-information codes
 make_gif ('no-clear', 'white-dot', 1, 1, [make_image (1, 1, 3, [WHITE], start_with_clear = False)], palette8)
 make_gif ('no-eoi', 'white-dot', 1, 1, [make_image (1, 1, 3, [WHITE], end_with_eoi = False)], palette8)
@@ -404,11 +419,10 @@ make_gif ('unknown-application-extension', 'white-dot', 1, 1, dot_image (3, WHIT
 nul_app_ext = make_application_extension ('\0\0\0\0\0\0\0\0', '\0\0\0', [b'\0\0\0\0', b'\0\0\0\0'])
 make_gif ('nul-application-extension', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, extensions = [nul_app_ext])
 
-# Trailing data after end
 # Various disposal methods
 # No global color table
-# Background color outside color table
 # Local color table
+# Animation
 
 # Regenerate the sample image from http://giflib.sourceforge.net/whatsinagif/
 colors = ['#ffffff', '#ff0000', '#0000ff', '#000000']

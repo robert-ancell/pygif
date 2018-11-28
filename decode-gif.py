@@ -23,7 +23,7 @@ def decode_lzw (data, start_code_size):
     code_count = 0
     (codes, clear_code, eoi_code) = make_code_table (start_code_size)
     last_code = clear_code
-    for d in data:
+    for (index, d) in enumerate (data):
         n_available = 8
         while n_available > 0:
             # Number of bits to get
@@ -48,7 +48,7 @@ def decode_lzw (data, start_code_size):
                 first_code_is_clear = True
 
             if code == eoi_code:
-                return (first_code_is_clear, True, values)
+                return (first_code_is_clear, True, values, data[index + 1:])
             elif code == clear_code:
                 (codes, clear_code, eoi_code) = make_code_table (start_code_size)
                 full_code_size = start_code_size
@@ -72,7 +72,7 @@ def decode_lzw (data, start_code_size):
             code = 0
             code_size = 0
 
-    return (first_code_is_clear, False, values)
+    return (first_code_is_clear, False, values, b'')
 
 def get_disposal_method_string (disposal_method):
     if disposal_method == 0:
@@ -292,13 +292,15 @@ def decode_gif (f):
                     colors = local_colors
                 codes += block
                 payload = payload[block_size:]
-            (first_code_is_clear, has_eoi, values) = decode_lzw (codes, lzw_code_size + 1)
+            (first_code_is_clear, has_eoi, values, extra_data) = decode_lzw (codes, lzw_code_size + 1)
             description = '%d' % len (values)
             if not first_code_is_clear:
                 description += ', no-clear-at-start'
             if not has_eoi:
                 description += ', no-end-of-information'
-            print ('  Data (%s): %s' % (description, values))
+            print ('  Pixels (%s): %s' % (description, values))
+            if len (extra_data) > 0:
+                print ('  Unused data (%d): %s' % (len (extra_data), repr (extra_data)))
         elif payload[0] == 0x21:
             payload = payload[1:]
             if len (payload) < 1:
