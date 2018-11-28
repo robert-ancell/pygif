@@ -183,7 +183,6 @@ def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi
             continue
 
         # If there are available bits, then add a new code
-        new_code = 0
         if next_code < 2 ** max_width:
             new_code = next_code
             next_code += 1
@@ -192,7 +191,8 @@ def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi
         stream.append ((codes[code[:-1]], code_size))
         code = code[-1:]
 
-        if new_code == 2 ** code_size:
+        # Use enough bits to place the next code
+        if next_code == 2 ** code_size + 1:
             code_size += 1
 
         # Clear when out of codes
