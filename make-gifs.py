@@ -530,6 +530,8 @@ make_gif ('animation-subimage-move', 'animation', 2, 2, palette2,
             make_image (1, 1, 1, [WHITE], 0, 1) ],
           loop_count = 0)
 
+# FIXME: Test restore only applies to area drawn on
+
 # Animation with multiple images per frame
 # NOTE: Everyone seems to be doing this wrong...
 make_gif ('animation-multi-image', 'animation', 2, 1, palette4,
