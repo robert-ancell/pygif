@@ -263,17 +263,11 @@ def make_trailer ():
     return b'\x3b'
 
 test_count = 0
-def make_gif (name, result, width, height, colors, images, background_color = 0, comment = '', loop_count = -1, buffer_size = -1, extensions = []):
+def make_gif (name, result, width, height, colors, blocks, background_color = 0):
     global test_count
     data = make_header (width, height, colors, background_color = background_color)
-    if loop_count >= 0:
-        data += make_netscape_extension (loop_count, buffer_size)
-    if comment != '':
-        data += make_comment_extension (comment)
-    for extension in extensions:
-        data += extension
-    for image in images:
-        data += image
+    for block in blocks:
+        data += block
     data += make_trailer ()
 
     filename = 'test-images/%03d_%s_%s.gif' % (test_count, name, result)
@@ -320,24 +314,21 @@ grays6 = make_grayscale_palette (6)
 grays7 = make_grayscale_palette (7)
 grays8 = make_grayscale_palette (8)
 
-def single_image (width, height, depth, color):
-    return [make_image (width, height, depth, [color] * (width * height))]
-
-def dot_image (depth, color):
-    return single_image (1, 1, depth, color)
+def filled_image (width, height, depth, color):
+    return make_image (width, height, depth, [color] * (width * height))
 
 # Single pixel image
-make_gif ('dot', 'color-dot', 1, 1, ['#000000', '#aabbcc'], dot_image (1, 1))
+make_gif ('dot', 'color-dot', 1, 1, ['#000000', '#aabbcc'], [ make_image (1, 1, 1, [ WHITE ]) ])
 
 # All possible color depths
-make_gif ('depth1', 'white-dot', 1, 1, grays1, dot_image (1, 1))
-make_gif ('depth2', 'white-dot', 1, 1, grays2, dot_image (2, 3))
-make_gif ('depth3', 'white-dot', 1, 1, grays3, dot_image (3, 7))
-make_gif ('depth4', 'white-dot', 1, 1, grays4, dot_image (4, 15))
-make_gif ('depth5', 'white-dot', 1, 1, grays5, dot_image (5, 31))
-make_gif ('depth6', 'white-dot', 1, 1, grays6, dot_image (6, 63))
-make_gif ('depth7', 'white-dot', 1, 1, grays7, dot_image (7, 127))
-make_gif ('depth8', 'white-dot', 1, 1, grays8, dot_image (8, 255))
+make_gif ('depth1', 'white-dot', 1, 1, grays1, [ make_image (1, 1, 1, [ 1 ]) ])
+make_gif ('depth2', 'white-dot', 1, 1, grays2, [ make_image (1, 1, 2, [ 3 ]) ])
+make_gif ('depth3', 'white-dot', 1, 1, grays3, [ make_image (1, 1, 3, [ 7 ]) ])
+make_gif ('depth4', 'white-dot', 1, 1, grays4, [ make_image (1, 1, 4, [ 15 ]) ])
+make_gif ('depth5', 'white-dot', 1, 1, grays5, [ make_image (1, 1, 5, [ 31 ]) ])
+make_gif ('depth6', 'white-dot', 1, 1, grays6, [ make_image (1, 1, 6, [ 63 ]) ])
+make_gif ('depth7', 'white-dot', 1, 1, grays7, [ make_image (1, 1, 7, [ 127 ]) ])
+make_gif ('depth8', 'white-dot', 1, 1, grays8, [ make_image (1, 1, 8, [ 255 ]) ])
 
 # Image with different colours in each pixel
 make_gif ('four-colors', 'four-colors', 2, 2, palette8, [make_image (2, 2, 8, [RED, GREEN, BLUE, WHITE])])
@@ -352,7 +343,9 @@ make_gif ('no-global-color-table', 'white-dot', 1, 1, [], [make_image (1, 1, 1, 
 make_gif ('no-data', 'white-dot', 1, 1, palette2, [], background_color = WHITE)
 
 # Image with invalid background value
-make_gif ('invalid-background', 'white-dot', 1, 1, palette2, dot_image (2, WHITE), background_color = 255)
+make_gif ('invalid-background', 'white-dot', 1, 1, palette2,
+          [ make_image (1, 1, 2, [ WHITE ]) ],
+          background_color = 255)
 
 # Test all color bits work
 values = []
@@ -403,8 +396,8 @@ make_gif ('images-overlap', 'white-dot', 1, 1, palette8, [make_image (1, 1, 3, [
                                                           make_image (1, 1, 3, [WHITE])])
 
 # Image with additional values
-make_gif ('additional-data', 'white-dot', 1, 1, palette8, single_image (10, 10, 3, WHITE))
-#make_gif ('additional-data-after-eoi', 'white-dot', 1, 1, single_image (10, 10, 3, WHITE), palette8)
+make_gif ('additional-data', 'white-dot', 1, 1, palette8, [ filled_image (10, 10, 3, WHITE) ])
+#make_gif ('additional-data-after-eoi', 'white-dot', 1, 1, [ filled_image (10, 10, 3, WHITE) ], palette8)
 
 # Addtional data after end-of-information
 make_gif ('extra-data', 'white-dot', 1, 1, palette8, [make_image (1, 1, 3, [WHITE], extra_data = b'HIDDEN MESSAGES')])
@@ -416,8 +409,8 @@ make_gif ('no-eoi', 'white-dot', 1, 1, palette8, [make_image (1, 1, 3, [WHITE], 
 make_gif ('no-clear-and-eoi', 'white-hline2', 2, 1, palette8, [make_image (2, 1, 3, [WHITE, WHITE], start_with_clear = False, end_with_eoi = False)])
 
 # Maximum sizes
-make_gif ('max-width', 'max-width', 65535, 1, palette8, single_image (65535, 1, 3, WHITE))
-make_gif ('max-height', 'max-height', 1, 65535, palette8, single_image (1, 65535, 3, WHITE))
+make_gif ('max-width', 'max-width', 65535, 1, palette8, [ filled_image (65535, 1, 3, WHITE) ])
+make_gif ('max-height', 'max-height', 1, 65535, palette8, [ filled_image (1, 65535, 3, WHITE) ])
 make_gif ('max-size', 'nocrash', 65535, 65535, palette8, [])
 
 import random
@@ -457,12 +450,24 @@ make_gif ('disabled-transparent', 'four-colors', 2, 2, palette8,
             make_image (2, 2, 3, [RED, GREEN, BLUE, WHITE]) ])
 
 # Loops
-make_gif ('loop-infinite', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 0)
-make_gif ('loop-once', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 1)
-make_gif ('loop-max', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 65535)
-make_gif ('loop-buffer', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 0, buffer_size = 1024)
-make_gif ('loop-buffer_max', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 0, buffer_size = 4294967295)
-make_gif ('loop-animexts', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), extensions = [make_animexts_extension (loop_count = 0, buffer_size = 1024)])
+make_gif ('loop-infinite', 'white-dot', 1, 1, palette8,
+          [ make_netscape_extension (loop_count = 0),
+            make_image (1, 1, 3, [ WHITE ]) ])
+make_gif ('loop-once', 'white-dot', 1, 1, palette8,
+          [ make_netscape_extension (loop_count = 1),
+            make_image (1, 1, 3, [ WHITE ]) ])
+make_gif ('loop-max', 'white-dot', 1, 1, palette8,
+          [ make_netscape_extension (loop_count = 65535),
+            make_image (1, 1, 3, [ WHITE ]) ])
+make_gif ('loop-buffer', 'white-dot', 1, 1, palette8,
+          [ make_netscape_extension (loop_count = 0, buffer_size = 1024),
+            make_image (1, 1, 3, [ WHITE ]) ])
+make_gif ('loop-buffer_max', 'white-dot', 1, 1, palette8,
+          [ make_netscape_extension (loop_count = 0, buffer_size = 4294967295),
+            make_image (1, 1, 3, [ WHITE ]) ])
+make_gif ('loop-animexts', 'white-dot', 1, 1, palette8,
+          [ make_animexts_extension (loop_count = 0, buffer_size = 1024),
+            make_image (1, 1, 3, [ WHITE ]) ])
 
 # FIXME: NETSCAPE extension without loop field
 
@@ -470,56 +475,57 @@ make_gif ('loop-animexts', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), ex
 
 # Animated image
 make_gif ('animation', 'animation', 2, 2, palette2,
-          [ make_graphic_control_extension (delay_time = 50),
+          [ make_netscape_extension (loop_count = 0),
+            make_graphic_control_extension (delay_time = 50),
             make_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK]),
             make_graphic_control_extension (delay_time = 50),
             make_image (2, 2, 1, [BLACK, WHITE, BLACK, BLACK]),
             make_graphic_control_extension (delay_time = 50),
             make_image (2, 2, 1, [BLACK, BLACK, BLACK, WHITE]),
             make_graphic_control_extension (delay_time = 50),
-            make_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK]) ],
-          loop_count = 0)
+            make_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK]) ])
 
 # Animation with variable frame speed
 make_gif ('animation-speed', 'animation', 2, 2, palette2,
-          [ make_graphic_control_extension (delay_time = 25),
+          [ make_netscape_extension (loop_count = 0),
+            make_graphic_control_extension (delay_time = 25),
             make_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK]),
             make_graphic_control_extension (delay_time = 50),
             make_image (2, 2, 1, [BLACK, WHITE, BLACK, BLACK]),
             make_graphic_control_extension (delay_time = 100),
             make_image (2, 2, 1, [BLACK, BLACK, BLACK, WHITE]),
             make_graphic_control_extension (delay_time = 200),
-            make_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK]) ],
-          loop_count = 0)
+            make_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK]) ])
 
 # Animated image with subimages
 # NOTE: RESTORE_BG appears to be interpreted as transparency
 make_gif ('animation-subimage', 'animation', 2, 2, palette2,
-          [ make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
+          [ make_netscape_extension (loop_count = 0),
+            make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 0, 0),
             make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 1, 0),
             make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 1, 1,),
             make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
-            make_image (1, 1, 1, [WHITE], 0, 1) ],
-          loop_count = 0)
+            make_image (1, 1, 1, [WHITE], 0, 1) ])
 
 # Background with animated subimages that add together
 make_gif ('animation-subimage-add', 'animation-fill', 2, 2, palette2,
-          [ make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
+          [ make_netscape_extension (loop_count = 0),
+            make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
             make_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK]),
             make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 1, 0),
             make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 1, 1,),
             make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
-            make_image (1, 1, 1, [WHITE], 0, 1) ],
-          loop_count = 0)
+            make_image (1, 1, 1, [WHITE], 0, 1) ])
 
 # Background with animated subimages that move over initial background
 make_gif ('animation-subimage-move', 'animation', 2, 2, palette2,
-          [ make_image (2, 2, 1, [BLACK, BLACK, BLACK, BLACK]),
+          [ make_netscape_extension (loop_count = 0),
+            make_image (2, 2, 1, [BLACK, BLACK, BLACK, BLACK]),
             make_graphic_control_extension (DISPOSAL_RESTORE_PREV, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 0, 0),
             make_graphic_control_extension (DISPOSAL_RESTORE_PREV, delay_time = 50),
@@ -527,44 +533,57 @@ make_gif ('animation-subimage-move', 'animation', 2, 2, palette2,
             make_graphic_control_extension (DISPOSAL_RESTORE_PREV, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 1, 1,),
             make_graphic_control_extension (DISPOSAL_RESTORE_PREV, delay_time = 50),
-            make_image (1, 1, 1, [WHITE], 0, 1) ],
-          loop_count = 0)
+            make_image (1, 1, 1, [WHITE], 0, 1) ])
 
 # FIXME: Test restore only applies to area drawn on
 
 # Animation with multiple images per frame
 # NOTE: Everyone seems to be doing this wrong...
 make_gif ('animation-multi-image', 'animation', 2, 1, palette4,
-          [ make_image (2, 1, 2, [BLACK, RED]),
+          [ make_netscape_extension (loop_count = 0),
+            make_image (2, 1, 2, [BLACK, RED]),
             make_graphic_control_extension (delay_time = 50),
             make_image (2, 1, 2, [BLACK, WHITE]),
             make_image (2, 1, 2, [RED,   BLACK]),
             make_graphic_control_extension (delay_time = 50),
-            make_image (2, 1, 2, [WHITE, BLACK]) ],
-          loop_count = 0)
+            make_image (2, 1, 2, [WHITE, BLACK]) ])
 
 # FIXME: Animation with explicit delay times of zero
 
 # FIXME: Animation without fixed first frame (everyone seems to be assuming transparent background)
 
 # Comments
-make_gif ('comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), comment = 'Hello World!')
-make_gif ('large-comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), comment = ' '.join (['Hello World!'] * 1000))
-make_gif ('nul-comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), comment = '\0')
-make_gif ('invalid-ascii-comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), comment = '\xff')
-make_gif ('invalid-utf8-comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), comment = '\xc3\x28')
+make_gif ('comment', 'white-dot', 1, 1, palette8,
+          [ make_comment_extension ('Hello World!'),
+            make_image (1, 1, 3, [ WHITE ]) ])
+make_gif ('large-comment', 'white-dot', 1, 1, palette8,
+          [ make_comment_extension (' '.join (['Hello World!'] * 1000)),
+            make_image (1, 1, 3, [ WHITE ]) ])
+make_gif ('nul-comment', 'white-dot', 1, 1, palette8,
+          [ make_comment_extension ('\0'),
+            make_image (1, 1, 3, [ WHITE ]) ])
+make_gif ('invalid-ascii-comment', 'white-dot', 1, 1, palette8,
+          [ make_comment_extension ('\xff'),
+            make_image (1, 1, 3, [ WHITE ]) ])
+make_gif ('invalid-utf8-comment', 'white-dot', 1, 1, palette8,
+          [ make_comment_extension ('\xc3\x28'),
+            make_image (1, 1, 3, [ WHITE ]) ])
 
 # Plain Text extension
-plain_text_ext = make_plain_text_extension ('Hello', 0, 0, 5, 1, 8, 8, 1, 0)
-make_gif ('plain-text', 'nocrash', 40, 8, palette8, single_image (40, 8, 3, BLACK), extensions = [plain_text_ext])
+make_gif ('plain-text', 'nocrash', 40, 8, palette8,
+          [ make_plain_text_extension ('Hello', 0, 0, 5, 1, 8, 8, 1, 0),
+            filled_image (40, 8, 3, BLACK) ])
 
 # Unknown extensions
-unknown_ext = make_extension (0x2a, [b'Hello', b'World'])
-make_gif ('unknown-extension', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), extensions = [unknown_ext])
-unknown_app_ext = make_application_extension ('UNKNOWN!', 'XXX', [b'Hello', b'World'])
-make_gif ('unknown-application-extension', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), extensions = [unknown_app_ext])
-nul_app_ext = make_application_extension ('\0\0\0\0\0\0\0\0', '\0\0\0', [b'\0\0\0\0', b'\0\0\0\0'])
-make_gif ('nul-application-extension', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), extensions = [nul_app_ext])
+make_gif ('unknown-extension', 'white-dot', 1, 1, palette8,
+          [ make_extension (0x2a, [b'Hello', b'World']),
+            make_image (1, 1, 3, [ WHITE ]) ])
+make_gif ('unknown-application-extension', 'white-dot', 1, 1, palette8,
+          [ make_application_extension ('UNKNOWN!', 'XXX', [b'Hello', b'World']),
+            make_image (1, 1, 3, [ WHITE ]) ])
+make_gif ('nul-application-extension', 'white-dot', 1, 1, palette8,
+          [ make_application_extension ('\0\0\0\0\0\0\0\0', '\0\0\0', [b'\0\0\0\0', b'\0\0\0\0']),
+            make_image (1, 1, 3, [ WHITE ]) ])
 
 # FIXME: Multiple clears in a row
 
@@ -580,7 +599,8 @@ values = [ 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
            2, 2, 2, 2, 2, 1, 1, 1, 1, 1,
            2, 2, 2, 2, 2, 1, 1, 1, 1, 1,
            2, 2, 2, 2, 2, 1, 1, 1, 1, 1 ]
-header = make_header (10, 10, colors, original_depth = 2)
-gce = make_graphic_control_extension ()
-image = make_image (10, 10, 2, values)
-open ('sample_1.gif', 'wb').write (header + gce + image + make_trailer ())
+data  = make_header (10, 10, colors, original_depth = 2)
+data += make_graphic_control_extension ()
+data += make_image (10, 10, 2, values)
+data += make_trailer ()
+open ('sample_1.gif', 'wb').write (data)
