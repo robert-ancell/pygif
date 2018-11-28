@@ -441,6 +441,18 @@ make_gif ('255-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 
 make_gif ('large-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 1, values, start_code_size = 8)])
 make_gif ('max-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 1, values, start_code_size = 12)])
 
+# Loops
+make_gif ('loop-infinite', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 0)
+make_gif ('loop-once', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 1)
+make_gif ('loop-max', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 65535)
+make_gif ('loop-buffer', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 0, buffer_size = 1024)
+make_gif ('loop-buffer_max', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 0, buffer_size = 4294967295)
+make_gif ('loop-animexts', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), extensions = [make_animexts_extension (loop_count = 0, buffer_size = 1024)])
+
+# FIXME: NETSCAPE extension without loop field
+
+# FIXME: NETSCAPE with multiple loop fields
+
 # Animated image
 make_gif ('animation', 'animation', 2, 2, palette2,
           [ make_graphic_control_extension (delay_time = 50),
@@ -454,15 +466,41 @@ make_gif ('animation', 'animation', 2, 2, palette2,
           loop_count = 0)
 
 # Animated image with subimages
-# NOTE: Everyone seems to be doing this wrong...
 make_gif ('animation-subimage', 'animation', 2, 2, palette2,
-          [ make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
+          [ make_image (2, 2, 1, [BLACK, BLACK, BLACK, BLACK]),
+            make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 0, 0),
             make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 1, 0),
             make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 1, 1,),
             make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
+            make_image (1, 1, 1, [WHITE], 0, 1) ],
+          loop_count = 0)
+
+# Background with animated subimages that add together
+make_gif ('animation-subimage-add', 'animation-fill', 2, 2, palette2,
+          [ make_image (2, 2, 1, [BLACK, BLACK, BLACK, BLACK]),
+            make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
+            make_image (1, 1, 1, [WHITE], 0, 0),
+            make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
+            make_image (1, 1, 1, [WHITE], 1, 0),
+            make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
+            make_image (1, 1, 1, [WHITE], 1, 1,),
+            make_graphic_control_extension (DISPOSAL_KEEP, delay_time = 50),
+            make_image (1, 1, 1, [WHITE], 0, 1) ],
+          loop_count = 0)
+
+# Background with animated subimages that add together
+make_gif ('animation-subimage-move', 'animation', 2, 2, palette2,
+          [ make_image (2, 2, 1, [BLACK, BLACK, BLACK, BLACK]),
+            make_graphic_control_extension (DISPOSAL_RESTORE_PREV, delay_time = 50),
+            make_image (1, 1, 1, [WHITE], 0, 0),
+            make_graphic_control_extension (DISPOSAL_RESTORE_PREV, delay_time = 50),
+            make_image (1, 1, 1, [WHITE], 1, 0),
+            make_graphic_control_extension (DISPOSAL_RESTORE_PREV, delay_time = 50),
+            make_image (1, 1, 1, [WHITE], 1, 1,),
+            make_graphic_control_extension (DISPOSAL_RESTORE_PREV, delay_time = 50),
             make_image (1, 1, 1, [WHITE], 0, 1) ],
           loop_count = 0)
 
@@ -476,7 +514,10 @@ make_gif ('animation-multi-image', 'animation', 2, 1, palette4,
             make_graphic_control_extension (delay_time = 50),
             make_image (2, 1, 2, [WHITE, BLACK]) ],
           loop_count = 0)
+
 # FIXME: Animation with explicit delay times of zero
+
+# FIXME: Animation without fixed first frame (everyone seems to be assuming transparent background)
 
 # Comments
 make_gif ('comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), comment = 'Hello World!')
@@ -484,16 +525,6 @@ make_gif ('large-comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), co
 make_gif ('nul-comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), comment = '\0')
 make_gif ('invalid-ascii-comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), comment = '\xff')
 make_gif ('invalid-utf8-comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), comment = '\xc3\x28')
-
-# Loops
-make_gif ('loop-infinite', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 0)
-make_gif ('loop-once', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 1)
-make_gif ('loop-max', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 65535)
-make_gif ('loop-buffer', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 0, buffer_size = 1024)
-make_gif ('loop-buffer_max', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 0, buffer_size = 4294967295)
-make_gif ('loop-animexts', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), extensions = [make_animexts_extension (loop_count = 0, buffer_size = 1024)])
-# Netscape extension without loop field
-# Netscape extension with multiple loop fields
 
 # Plain Text extension
 plain_text_ext = make_plain_text_extension ('Hello', 0, 0, 5, 1, 8, 8, 1, 0)
@@ -507,9 +538,7 @@ make_gif ('unknown-application-extension', 'white-dot', 1, 1, palette8, dot_imag
 nul_app_ext = make_application_extension ('\0\0\0\0\0\0\0\0', '\0\0\0', [b'\0\0\0\0', b'\0\0\0\0'])
 make_gif ('nul-application-extension', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), extensions = [nul_app_ext])
 
-# Various disposal methods
-# Animation
-# Multiple clears in a row
+# FIXME: Multiple clears in a row
 
 # Regenerate the sample image from http://giflib.sourceforge.net/whatsinagif/
 colors = ['#ffffff', '#ff0000', '#0000ff', '#000000']
