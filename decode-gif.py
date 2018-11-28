@@ -14,7 +14,7 @@ def make_code_table (code_size):
     codes.append (eoi_code)
     return (codes, clear_code, eoi_code)
 
-def decode_lzw (data, start_code_size):
+def decode_lzw (data, start_code_size, max_code_size = 12):
     values = []
     first_code_is_clear = False
     code = 0
@@ -56,17 +56,23 @@ def decode_lzw (data, start_code_size):
             elif code < len (codes):
                 for v in codes[code]:
                     values.append (v)
-                if last_code != clear_code and len (codes) < 4095:
+                if last_code != clear_code and len (codes) < 2 ** max_code_size - 1:
                     codes.append (codes[last_code] + (codes[code][0],))
+                    assert (len (codes) < 2 ** max_code_size)
+                    if len (codes) == 2 ** code_size and code_size < max_code_size:
+                        code_size += 1
                 last_code = code
             elif code == len (codes):
-                codes.append (codes[last_code] + (codes[last_code][0],))
+                if len (codes) < 2 ** max_code_size - 1:
+                    codes.append (codes[last_code] + (codes[last_code][0],))
+                    assert (len (codes) < 2 ** max_code_size)
+                    if len (codes) == 2 ** code_size and code_size < max_code_size:
+                        code_size += 1
                 for v in codes[-1]:
                     values.append (v)
                 last_code = code
             else:
                 print ('Ignoring unexpected code %d' % code)
-            code_size = math.ceil (math.log2 (len (codes) + 1))
             code = 0
             code_bits = 0
 
