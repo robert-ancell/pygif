@@ -15,11 +15,11 @@ def make_code_table (code_size):
     return (codes, clear_code, eoi_code)
 
 def decode_lzw (data, start_code_size):
-    full_code_size = start_code_size
+    code_size = start_code_size
     values = []
     first_code_is_clear = False
     code = 0
-    code_size = 0
+    code_bits = 0
     code_count = 0
     (codes, clear_code, eoi_code) = make_code_table (start_code_size)
     last_code = clear_code
@@ -27,7 +27,7 @@ def decode_lzw (data, start_code_size):
         n_available = 8
         while n_available > 0:
             # Number of bits to get
-            n_bits = min (full_code_size - code_size, n_available)
+            n_bits = min (code_size - code_bits, n_available)
 
             # Extract bits from octet
             new_bits = d & ((1 << n_bits) - 1)
@@ -35,11 +35,11 @@ def decode_lzw (data, start_code_size):
             n_available -= n_bits
 
             # Add new bits to the top of the code
-            code = new_bits << code_size | code
-            code_size += n_bits
+            code = new_bits << code_bits | code
+            code_bits += n_bits
 
             # Keep going until we get a full code word
-            if code_size < full_code_size:
+            if code_bits < code_size:
                 continue
             code_count += 1
 
@@ -51,7 +51,7 @@ def decode_lzw (data, start_code_size):
                 return (first_code_is_clear, True, values, data[index + 1:])
             elif code == clear_code:
                 (codes, clear_code, eoi_code) = make_code_table (start_code_size)
-                full_code_size = start_code_size
+                code_size = start_code_size
                 last_code = clear_code
             elif code < len (codes):
                 for v in codes[code]:
@@ -66,9 +66,9 @@ def decode_lzw (data, start_code_size):
                 last_code = code
             else:
                 print ('Ignoring unexpected code %d' % code)
-            full_code_size = math.ceil (math.log2 (len (codes) + 1))
+            code_size = math.ceil (math.log2 (len (codes) + 1))
             code = 0
-            code_size = 0
+            code_bits = 0
 
     return (first_code_is_clear, False, values, b'')
 
