@@ -230,7 +230,9 @@ def make_lzw_data (values, start_code_size, start_with_clear = True, end_with_eo
 def make_trailer ():
     return b'\x3b'
 
-def make_gif (name, width, height, images, colors, background_color = 0, comment = '', loop_count = -1, buffer_size = -1, extensions = []):
+test_count = 0
+def make_gif (name, result, width, height, images, colors, background_color = 0, comment = '', loop_count = -1, buffer_size = -1, extensions = []):
+    global test_count
     data = make_header (width, height, colors, background_color = background_color)
     if loop_count >= 0:
         data += make_netscape_extension (loop_count, buffer_size)
@@ -242,8 +244,9 @@ def make_gif (name, width, height, images, colors, background_color = 0, comment
         data += image
     data += make_trailer ()
 
-    filename = '%s.gif' % name
+    filename = 'test-images/%03d_%s_%s.gif' % (test_count, name, result)
     open (filename, 'wb').write (data)
+    test_count += 1
 
 BLACK        = 0
 WHITE        = 1
@@ -292,72 +295,64 @@ def dot_image (depth, color):
     return single_image (1, 1, depth, color)
 
 # Single pixel images
-make_gif ('1x1x1_aabbcc', 1, 1, dot_image (1, 1), ['#000000', '#aabbcc'])
-make_gif ('1x1x1_ffffff', 1, 1, dot_image (1, 1), grays1)
-make_gif ('1x1x2_ffffff', 1, 1, dot_image (2, 3), grays2)
-make_gif ('1x1x3_ffffff', 1, 1, dot_image (3, 7), grays3)
-make_gif ('1x1x4_ffffff', 1, 1, dot_image (4, 15), grays4)
-make_gif ('1x1x5_ffffff', 1, 1, dot_image (5, 31), grays5)
-make_gif ('1x1x6_ffffff', 1, 1, dot_image (6, 63), grays6)
-make_gif ('1x1x7_ffffff', 1, 1, dot_image (7, 127), grays7)
-make_gif ('1x1x8_ffffff', 1, 1, dot_image (8, 255), grays8)
+make_gif ('dot', 'color-dot', 1, 1, dot_image (1, 1), ['#000000', '#aabbcc'])
+make_gif ('depth1', 'white-dot', 1, 1, dot_image (1, 1), grays1)
+make_gif ('depth2', 'white-dot', 1, 1, dot_image (2, 3), grays2)
+make_gif ('depth3', 'white-dot', 1, 1, dot_image (3, 7), grays3)
+make_gif ('depth4', 'white-dot', 1, 1, dot_image (4, 15), grays4)
+make_gif ('depth5', 'white-dot', 1, 1, dot_image (5, 31), grays5)
+make_gif ('depth6', 'white-dot', 1, 1, dot_image (6, 63), grays6)
+make_gif ('depth7', 'white-dot', 1, 1, dot_image (7, 127), grays7)
+make_gif ('depth8', 'white-dot', 1, 1, dot_image (8, 255), grays8)
 
 # Subimages
-make_gif ('3x3_ffffff_subimage', 3, 3, [make_image (1, 1, 3, [RED], left = 1, top = 1)], palette8, background_color = WHITE)
-make_gif ('2x2_ffffff_subimag_overlap', 2, 2, [make_image (2, 2, 3, [RED] * 4, left = 1, top = 1)], palette8, background_color = WHITE)
-make_gif ('2x2_ffffff_subimag_outside', 2, 2, [make_image (2, 2, 3, [RED] * 4, left = 2, top = 2)], palette8, background_color = WHITE)
+make_gif ('subimage', 'subimage', 3, 3, [make_image (1, 1, 3, [RED], left = 1, top = 1)], palette8, background_color = WHITE)
+make_gif ('subimage-overlap', 'subimage-overlap', 2, 2, [make_image (2, 2, 3, [RED] * 4, left = 1, top = 1)], palette8, background_color = WHITE)
+make_gif ('subimage-outside', 'subimage-outside', 2, 2, [make_image (2, 2, 3, [RED] * 4, left = 2, top = 2)], palette8, background_color = WHITE)
 # Subimage overlaps / outside
 
 # Image with no data
-make_gif ('1x1_ffffff_no_data', 1, 1, [], palette2, background_color = 1)
+make_gif ('no-data', 'white-dot', 1, 1, [], palette2, background_color = 1)
 
 # Image with invalid background value
-make_gif ('1x1_ffffff_invalid_background', 1, 1, dot_image (2, WHITE), palette2, background_color = 255)
+make_gif ('invalid-background', 'white-dot', 1, 1, dot_image (2, WHITE), palette2, background_color = 255)
 
-# Filled images of increasing sizes
-make_gif ('2x2_ffffff', 2, 2, single_image (2, 2, 2, WHITE), palette2)
-make_gif ('3x3_ffffff', 3, 3, single_image (3, 3, 2, WHITE), palette2)
-make_gif ('10x10_ffffff', 10, 10, single_image (10, 10, 2, WHITE), palette2)
+make_gif ('four-colors', 'four-colors', 2, 2, [make_image (2, 2, 8, [RED, GREEN, BLUE, WHITE])], palette8)
 
-make_gif ('2x2_colors', 2, 2, [make_image (2, 2, 8, [RED, GREEN, BLUE, WHITE])], palette8)
-
-make_gif ('16x16_ff0000', 16, 16, single_image (16, 16, 8, RED), palette8)
 values = []
 colors = []
 for i in range (256):
     values.append (i)
     colors.append ('#%02x0000' % i)
-make_gif ('16x16_reds', 16, 16, [make_image (16, 16, 8, values)], colors)
+make_gif ('all-reds', 'all-reds', 16, 16, [make_image (16, 16, 8, values)], colors)
 
-make_gif ('16x16_00ff00', 16, 16, single_image (16, 16, 8, GREEN), palette8)
 values = []
 colors = []
 for i in range (256):
     values.append (i)
     colors.append ('#00%02x00' % i)
-make_gif ('16x16_greens', 16, 16, [make_image (16, 16, 8, values)], colors)
+make_gif ('all-greens', 'all-greens', 16, 16, [make_image (16, 16, 8, values)], colors)
 
-make_gif ('16x16_0000ff', 16, 16, single_image (16, 16, 8, BLUE), palette8)
 values = []
 colors = []
 for i in range (256):
     values.append (i)
     colors.append ('#0000%02x' % i)
-make_gif ('16x16_blues', 16, 16, [make_image (16, 16, 8, values)], colors)
+make_gif ('all-blues', 'all-blues', 16, 16, [make_image (16, 16, 8, values)], colors)
 
 # Image with additional values
-make_gif ('1x1_ff0000_additional_data', 1, 1, single_image (10, 10, 3, RED), palette8)
-#make_gif ('1x1_additional_data_after_eoi', 1, 1, single_image (10, 10, 3, RED), palette8)
+make_gif ('additional-data', 'white-dot', 1, 1, single_image (10, 10, 3, WHITE), palette8)
+#make_gif ('additional-data-after-eoi', 'white-dot', 1, 1, single_image (10, 10, 3, WHITE), palette8)
 
 # Optional clear and end-of-information codes
-make_gif ('1x1_ff0000_no_clear', 1, 1, [make_image (1, 1, 3, [RED], start_with_clear = False)], palette8)
-make_gif ('1x1_ff0000_no_eoi', 1, 1, [make_image (1, 1, 3, [RED], end_with_eoi = False)], palette8)
+make_gif ('no-clear', 'white-dot', 1, 1, [make_image (1, 1, 3, [WHITE], start_with_clear = False)], palette8)
+make_gif ('no-eoi', 'white-dot', 1, 1, [make_image (1, 1, 3, [WHITE], end_with_eoi = False)], palette8)
 # Use 2x1 so the single byte of data contains two codes (6 bits) otherwise the decoder will read a second code due to the lack of EOI
-make_gif ('2x1_ff0000_no_clear_and_eoi', 2, 1, [make_image (2, 1, 3, [RED, RED], start_with_clear = False, end_with_eoi = False)], palette8)
+make_gif ('no-clear-and-eoi', 'white-hline2', 2, 1, [make_image (2, 1, 3, [WHITE, WHITE], start_with_clear = False, end_with_eoi = False)], palette8)
 
 # Maximum sizes
-make_gif ('65535x1_ffffff', 65535, 1, single_image (65535, 1, 3, WHITE), palette8)
-make_gif ('1x65535_ffffff', 1, 65535, single_image (1, 65535, 3, WHITE), palette8)
+make_gif ('max-width', 'max-width', 65535, 1, single_image (65535, 1, 3, WHITE), palette8)
+make_gif ('max-height', 'max-height', 1, 65535, single_image (1, 65535, 3, WHITE), palette8)
 
 # Uses maximum 4095 codes
 import random
@@ -367,36 +362,36 @@ for i in range (300*300):
     m = 2 ** 32
     seed = (1103515245 * seed + 12345) % m
     values.append (seed >> 31)
-make_gif ('300x300_noise_4095_codes', 300, 300, [make_image (300, 300, 1, values)], palette2)
+make_gif ('4095-codes', '4095-codes', 300, 300, [make_image (300, 300, 1, values)], palette2)
 
 # Comments
-make_gif ('1x1_ffffff_comment', 1, 1, dot_image (3, WHITE), palette8, comment = 'Hello World!')
-make_gif ('1x1_ffffff_large_comment', 1, 1, dot_image (3, WHITE), palette8, comment = ' '.join (['Hello World!'] * 1000))
-make_gif ('1x1_ffffff_nul_comment', 1, 1, dot_image (3, WHITE), palette8, comment = '\0')
-make_gif ('1x1_ffffff_invalid_ascii_comment', 1, 1, dot_image (3, WHITE), palette8, comment = '\xff')
-make_gif ('1x1_ffffff_invalid_utf8_comment', 1, 1, dot_image (3, WHITE), palette8, comment = '\xc3\x28')
+make_gif ('comment', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, comment = 'Hello World!')
+make_gif ('large-comment', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, comment = ' '.join (['Hello World!'] * 1000))
+make_gif ('nul-comment', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, comment = '\0')
+make_gif ('invalid-ascii-comment', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, comment = '\xff')
+make_gif ('invalid-utf8-comment', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, comment = '\xc3\x28')
 
 # Loops
-make_gif ('1x1_ffffff_loop_infinite', 1, 1, dot_image (3, WHITE), palette8, loop_count = 0)
-make_gif ('1x1_ffffff_loop_once', 1, 1, dot_image (3, WHITE), palette8, loop_count = 1)
-make_gif ('1x1_ffffff_loop_max', 1, 1, dot_image (3, WHITE), palette8, loop_count = 65535)
-make_gif ('1x1_ffffff_loop_buffer', 1, 1, dot_image (3, WHITE), palette8, loop_count = 0, buffer_size = 1024)
-make_gif ('1x1_ffffff_loop_buffer_max', 1, 1, dot_image (3, WHITE), palette8, loop_count = 0, buffer_size = 4294967295)
-make_gif ('1x1_ffffff_loop_animexts', 1, 1, dot_image (3, WHITE), palette8, extensions = [make_animexts_extension (loop_count = 0, buffer_size = 1024)])
+make_gif ('loop-infinite', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, loop_count = 0)
+make_gif ('loop-once', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, loop_count = 1)
+make_gif ('loop-max', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, loop_count = 65535)
+make_gif ('loop-buffer', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, loop_count = 0, buffer_size = 1024)
+make_gif ('loop-buffer_max', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, loop_count = 0, buffer_size = 4294967295)
+make_gif ('loop-animexts', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, extensions = [make_animexts_extension (loop_count = 0, buffer_size = 1024)])
 # Netscape extension without loop field
 # Netscape extension with multiple loop fields
 
 # Plain Text extension
 plain_text_ext = make_plain_text_extension ('Hello', 0, 0, 5, 1, 8, 8, 1, 0)
-make_gif ('40x8_plain_text', 40, 8, single_image (40, 8, 3, BLACK), palette8, extensions = [plain_text_ext])
+make_gif ('plain-text', 'nocrash', 40, 8, single_image (40, 8, 3, BLACK), palette8, extensions = [plain_text_ext])
 
 # Unknown extensions
 unknown_ext = make_extension (0x2a, [b'Hello', b'World'])
-make_gif ('1x1_ffffff_unknown_extension', 1, 1, dot_image (3, WHITE), palette8, extensions = [unknown_ext])
+make_gif ('unknown-extension', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, extensions = [unknown_ext])
 unknown_app_ext = make_application_extension ('UNKNOWN!', 'XXX', [b'Hello', b'World'])
-make_gif ('1x1_ffffff_unknown_application_extension', 1, 1, dot_image (3, WHITE), palette8, extensions = [unknown_app_ext])
+make_gif ('unknown-application-extension', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, extensions = [unknown_app_ext])
 nul_app_ext = make_application_extension ('\0\0\0\0\0\0\0\0', '\0\0\0', [b'\0\0\0\0', b'\0\0\0\0'])
-make_gif ('1x1_ffffff_nul_application_extension', 1, 1, dot_image (3, WHITE), palette8, extensions = [nul_app_ext])
+make_gif ('nul-application-extension', 'white-dot', 1, 1, dot_image (3, WHITE), palette8, extensions = [nul_app_ext])
 
 # Trailing data after end
 # Various disposal methods
