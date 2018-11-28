@@ -317,9 +317,6 @@ grays8 = make_grayscale_palette (8)
 def filled_image (width, height, depth, color):
     return make_image (width, height, depth, [color] * (width * height))
 
-# Single pixel image
-make_gif ('dot', 'color-dot', 1, 1, ['#000000', '#aabbcc'], [ make_image (1, 1, 1, [ WHITE ]) ])
-
 # All possible color depths
 make_gif ('depth1', 'white-dot', 1, 1, grays1, [ make_image (1, 1, 1, [ 1 ]) ])
 make_gif ('depth2', 'white-dot', 1, 1, grays2, [ make_image (1, 1, 2, [ 3 ]) ])
