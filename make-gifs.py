@@ -170,25 +170,26 @@ def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi
     code_size = start_code_size
     (codes, clear_code, eoi_code, next_code) = make_code_table (code_size)
 
-    code = (values[0],)
+    code = tuple ()
     stream = []
     if start_with_clear:
         stream.append ((clear_code, code_size))
-    index = 1
-    while index < len (values):
-        code += (values[index],)
-        index += 1
-        if code not in codes:
-            if next_code < 2 ** 12:
-                new_code = next_code
-                next_code += 1
-                codes[code] = new_code
+    for value in values:
+        code += (value,)
+        if code in codes:
+            continue
 
-            stream.append ((codes[code[:-1]], code_size))
-            code = code[-1:]
+        # If there are available bits, then add a new code
+        if next_code < 2 ** 12:
+            new_code = next_code
+            next_code += 1
+            codes[code] = new_code
 
-            if new_code == 2 ** code_size:
-                code_size += 1
+        stream.append ((codes[code[:-1]], code_size))
+        code = code[-1:]
+
+        if new_code == 2 ** code_size:
+            code_size += 1
     stream.append ((codes[code], code_size))
     if end_with_eoi:
         stream.append ((eoi_code, code_size))
@@ -432,6 +433,7 @@ make_gif ('nul-application-extension', 'white-dot', 1, 1, dot_image (3, WHITE), 
 
 # Various disposal methods
 # Animation
+# Clear inside LZW
 
 # Regenerate the sample image from http://giflib.sourceforge.net/whatsinagif/
 colors = ['#ffffff', '#ff0000', '#0000ff', '#000000']
