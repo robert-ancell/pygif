@@ -91,7 +91,11 @@ def make_extension (label, blocks):
     data += struct.pack ('B', 0)
     return data
 
-def make_graphic_control_extension (disposal_method = 0, reserved = 0, delay_time = 0, user_input = False, has_transparent = False, transparent_color = 0):
+DISPOSAL_NONE         = 0
+DISPOSAL_KEEP         = 1
+DISPOSAL_RESTORE_BG   = 2
+DISPOSAL_RESTORE_PREV = 3
+def make_graphic_control_extension (disposal_method = DISPOSAL_NONE, delay_time = 0, user_input = False, has_transparent = False, transparent_color = 0, reserved = 0):
     assert (0 <= disposal_method <= 7)
     assert (0 <= reserved <= 7)
     assert (0 <= delay_time <= 65535)
@@ -438,12 +442,41 @@ make_gif ('large-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300
 make_gif ('max-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 1, values, start_code_size = 12)])
 
 # Animated image
-make_gif ('animation', 'animation', 2, 1, palette2,
+make_gif ('animation', 'animation', 2, 2, palette2,
           [ make_graphic_control_extension (delay_time = 50),
-            make_image (2, 1, 1, [BLACK, WHITE]),
+            make_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK]),
             make_graphic_control_extension (delay_time = 50),
-            make_image (2, 1, 1, [WHITE, BLACK]) ],
+            make_image (2, 2, 1, [BLACK, WHITE, BLACK, BLACK]),
+            make_graphic_control_extension (delay_time = 50),
+            make_image (2, 2, 1, [BLACK, BLACK, BLACK, WHITE]),
+            make_graphic_control_extension (delay_time = 50),
+            make_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK]) ],
           loop_count = 0)
+
+# Animated image with subimages
+# NOTE: Everyone seems to be doing this wrong...
+make_gif ('animation-subimage', 'animation', 2, 2, palette2,
+          [ make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
+            make_image (1, 1, 1, [WHITE], 0, 0),
+            make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
+            make_image (1, 1, 1, [WHITE], 1, 0),
+            make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
+            make_image (1, 1, 1, [WHITE], 1, 1,),
+            make_graphic_control_extension (DISPOSAL_RESTORE_BG, delay_time = 50),
+            make_image (1, 1, 1, [WHITE], 0, 1) ],
+          loop_count = 0)
+
+# Animation with multiple images per frame
+# NOTE: Everyone seems to be doing this wrong...
+make_gif ('animation-multi-image', 'animation', 2, 1, palette4,
+          [ make_image (2, 1, 2, [BLACK, RED]),
+            make_graphic_control_extension (delay_time = 50),
+            make_image (2, 1, 2, [BLACK, WHITE]),
+            make_image (2, 1, 2, [RED,   BLACK]),
+            make_graphic_control_extension (delay_time = 50),
+            make_image (2, 1, 2, [WHITE, BLACK]) ],
+          loop_count = 0)
+# FIXME: Animation with explicit delay times of zero
 
 # Comments
 make_gif ('comment', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), comment = 'Hello World!')
