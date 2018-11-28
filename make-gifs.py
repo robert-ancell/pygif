@@ -448,6 +448,8 @@ make_gif ('nul-application-extension', 'white-dot', 1, 1, dot_image (3, WHITE), 
 
 # Various disposal methods
 # Animation
+# Multiple clears in a row
+# Interlaced images
 
 # Regenerate the sample image from http://giflib.sourceforge.net/whatsinagif/
 colors = ['#ffffff', '#ff0000', '#0000ff', '#000000']
