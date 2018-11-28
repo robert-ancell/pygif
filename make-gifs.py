@@ -294,8 +294,10 @@ def single_image (width, height, depth, color):
 def dot_image (depth, color):
     return single_image (1, 1, depth, color)
 
-# Single pixel images
+# Single pixel image
 make_gif ('dot', 'color-dot', 1, 1, dot_image (1, 1), ['#000000', '#aabbcc'])
+
+# All possible color depths
 make_gif ('depth1', 'white-dot', 1, 1, dot_image (1, 1), grays1)
 make_gif ('depth2', 'white-dot', 1, 1, dot_image (2, 3), grays2)
 make_gif ('depth3', 'white-dot', 1, 1, dot_image (3, 7), grays3)
@@ -308,26 +310,25 @@ make_gif ('depth8', 'white-dot', 1, 1, dot_image (8, 255), grays8)
 # Image with different colours in each pixel
 make_gif ('four-colors', 'four-colors', 2, 2, [make_image (2, 2, 8, [RED, GREEN, BLUE, WHITE])], palette8)
 
-# Image with no data
-make_gif ('no-data', 'white-dot', 1, 1, [], palette2, background_color = 1)
+# Image with no data (just shows background)
+make_gif ('no-data', 'white-dot', 1, 1, [], palette2, background_color = WHITE)
 
 # Image with invalid background value
 make_gif ('invalid-background', 'white-dot', 1, 1, dot_image (2, WHITE), palette2, background_color = 255)
 
+# Test all color bits work
 values = []
 colors = []
 for i in range (256):
     values.append (i)
     colors.append ('#%02x0000' % i)
 make_gif ('all-reds', 'all-reds', 16, 16, [make_image (16, 16, 8, values)], colors)
-
 values = []
 colors = []
 for i in range (256):
     values.append (i)
     colors.append ('#00%02x00' % i)
 make_gif ('all-greens', 'all-greens', 16, 16, [make_image (16, 16, 8, values)], colors)
-
 values = []
 colors = []
 for i in range (256):
@@ -335,7 +336,7 @@ for i in range (256):
     colors.append ('#0000%02x' % i)
 make_gif ('all-blues', 'all-blues', 16, 16, [make_image (16, 16, 8, values)], colors)
 
-# Images that don't cover the background
+# Images that don't fully cover the background
 make_gif ('image-inside-bg', 'image-indside-bg', 3, 3, [make_image (1, 1, 3, [RED], left = 1, top = 1)], palette8, background_color = WHITE)
 make_gif ('image-overlap-bg', 'image-overlap-bg', 2, 2, [make_image (2, 2, 3, [RED] * 4, left = 1, top = 1)], palette8, background_color = WHITE)
 make_gif ('image-outside-bg', 'image-outside-bg', 2, 2, [make_image (2, 2, 3, [RED] * 4, left = 2, top = 2)], palette8, background_color = WHITE)
@@ -409,6 +410,7 @@ make_gif ('nul-application-extension', 'white-dot', 1, 1, dot_image (3, WHITE), 
 # Background color outside color table
 # Local color table
 
+# Regenerate the sample image from http://giflib.sourceforge.net/whatsinagif/
 colors = ['#ffffff', '#ff0000', '#0000ff', '#000000']
 values = [ 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
            1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
@@ -423,4 +425,4 @@ values = [ 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
 header = make_header (10, 10, colors, original_depth = 2)
 gce = make_graphic_control_extension ()
 image = make_image (10, 10, 2, values)
-open ('sample_2.gif', 'wb').write (header + gce + image + make_trailer ())
+open ('sample_1.gif', 'wb').write (header + gce + image + make_trailer ())
