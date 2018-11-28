@@ -157,14 +157,18 @@ def bits_required (value):
     else:
         return math.ceil (math.log2 (value + 1))
 
-def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi = True):
-    code_size = start_code_size
+def make_code_table (code_size):
     codes = {}
     for i in range (2 ** (code_size - 1)):
         codes[(i,)] = i
-    clear_code = 2 ** (code_size - 1) # FIXME: Send clear when need code 4096
+    clear_code = 2 ** (code_size - 1)
     eoi_code = clear_code + 1
     next_code = clear_code + 2
+    return (codes, clear_code, eoi_code, next_code)
+
+def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi = True):
+    code_size = start_code_size
+    (codes, clear_code, eoi_code, next_code) = make_code_table (code_size)
 
     code = (values[0],)
     stream = []
@@ -175,7 +179,7 @@ def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi
         code += (values[index],)
         index += 1
         if code not in codes:
-            if next_code < 4096:
+            if next_code < 2 ** 12:
                 new_code = next_code
                 next_code += 1
                 codes[code] = new_code
