@@ -304,10 +304,11 @@ def decode_gif (f):
                 payload = payload[block_size:]
             (first_code_is_clear, clear_count, has_eoi, values, extra_data) = decode_lzw (codes, lzw_code_size + 1)
             description = '%d' % len (values)
+            description += ', code-size=%d' % (lzw_code_size + 1)
             if interlace:
                 description += ', interlace'
             if clear_count > 0:
-                description += ', %d clears' % clear_count
+                description += ', n-clears=%d' % clear_count
             if not first_code_is_clear:
                 description += ', no-clear-at-start'
             if not has_eoi:
