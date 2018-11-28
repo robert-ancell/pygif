@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import itertools
 import math
 import struct
 
@@ -369,6 +370,18 @@ for i in range (256):
     colors.append ('#0000%02x' % i)
 make_gif ('all-blues', 'all-blues', 16, 16, colors, [make_image (16, 16, 8, values)])
 
+# Interlaced image
+colors = []
+for i in range (256):
+    colors.append ('#%02x0000' % i)
+values = []
+def interlace_rows (height):
+    return itertools.chain (range (0, 16, 8), range (4, 16, 8), range (2, 16, 4), range (1, 16, 2))
+for row in interlace_rows (16):
+    for col in range (16):
+        values.append (row * 16 + col)
+make_gif ('interlace', 'all-reds', 16, 16, colors, [make_image (16, 16, 8, values, interlace = True)])
+
 # Images that don't fully cover the background
 make_gif ('image-inside-bg', 'image-indside-bg', 3, 3, palette8, [make_image (1, 1, 3, [RED], left = 1, top = 1)], background_color = WHITE)
 make_gif ('image-overlap-bg', 'image-overlap-bg', 2, 2, palette8, [make_image (2, 2, 3, [RED] * 4, left = 1, top = 1)], background_color = WHITE)
@@ -456,7 +469,6 @@ make_gif ('nul-application-extension', 'white-dot', 1, 1, palette8, dot_image (3
 # Various disposal methods
 # Animation
 # Multiple clears in a row
-# Interlaced images
 
 # Regenerate the sample image from http://giflib.sourceforge.net/whatsinagif/
 colors = ['#ffffff', '#ff0000', '#0000ff', '#000000']
