@@ -190,6 +190,14 @@ def decode_extension (label, blocks):
             if authentication_code != 'XMP':
                 print ('  Authentication Code: %s' % repr (authentication_code))
             print ('  Metadata%s: %s' % (description, repr (data)))
+        elif identifier == 'ICCRGBG1':
+            print ('ICC Color Profile Extension:')
+            data = b''
+            for block in blocks[1:]:
+                data += block
+            if authentication_code != '012':
+                print ('  Authentication Code: %s' % repr (authentication_code))
+            print ('  ICC Profile: %s' % repr (data))
         else:
             print ('Application Extension:')
             print ('  Application Identifier: %s' % repr (identifier))
