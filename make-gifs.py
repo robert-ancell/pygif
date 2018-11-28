@@ -441,6 +441,11 @@ make_gif ('255-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 
 make_gif ('large-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 1, values, start_code_size = 8)])
 make_gif ('max-codes', '4095-codes', 300, 300, palette2, [make_image (300, 300, 1, values, start_code_size = 12)])
 
+# Transparent image
+make_gif ('transparent', 'four-colors-transparent', 2, 2, palette8,
+          [ make_graphic_control_extension (has_transparent = True, transparent_color = RED),
+            make_image (2, 2, 3, [RED, GREEN, BLUE, WHITE]) ])
+
 # Loops
 make_gif ('loop-infinite', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 0)
 make_gif ('loop-once', 'white-dot', 1, 1, palette8, dot_image (3, WHITE), loop_count = 1)
