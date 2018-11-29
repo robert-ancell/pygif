@@ -210,52 +210,23 @@ def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi
         stream.append ((eoi_code, code_size))
     return stream
 
+import gif
+
 def make_lzw_data (values, start_code_size, start_with_clear = True, end_with_eoi = True, max_width = 12, clear_on_max_width = True, extra_data = b''):
-    codes = lzw_compress (values, start_code_size, start_with_clear, end_with_eoi, max_width, clear_on_max_width)
+    encoder = gif.LZWEncoder (start_code_size, max_width, start_with_clear, clear_on_max_width)
+    encoder.feed (values)
+    encoder.finish (end_with_eoi)
 
     # Write starting code size
-    data = struct.pack ('B', codes[0][1] - 1)
+    data = struct.pack ('B', start_code_size - 1)
 
-    # Pack bits into blocks
-    block = b''
-    blocks = []
-    octet = 0
-    octet_length = 0
-    for (code, code_size) in codes:
-        octet |= code << octet_length
-        octet_length += code_size
-        while octet_length > 8:
-            block += struct.pack ('B', octet & 0xFF)
-            if len (block) == 255:
-                blocks.append (block)
-                block = b''
-            octet >>= 8
-            octet_length -= 8
-
-    # Use partially filled octet and block
-    if octet_length > 0:
-        block += struct.pack ('B', octet)
-    if len (block) > 0:
-        blocks.append (block)
-
-    # Add any extra data to the end
-    if len (extra_data) > 0:
-        last_block = blocks[-1]
-        n_available = 255 - len (last_block)
-        if n_available > 0:
-            last_block += extra_data[:n_available]
-            extra_data = extra_data[n_available:]
-            blocks[-1] = last_block
-        while len (extra_data) > 0:
-            blocks.append (extra_data[:255])
-            extra_data = extra_data[255:]
-
-    # Terminate with an empty block
-    blocks.append (b'')
-
-    # Write blocks with block headers
-    for b in blocks:
-        data += struct.pack ('B', len (b)) + b
+    offset = 0
+    lzw_data = encoder.data + extra_data
+    while offset < len (lzw_data):
+        length = min (len (lzw_data) - offset, 255)
+        data += struct.pack ('B', length) + lzw_data[offset: offset + length]
+        offset += length
+    data += struct.pack ('B', 0)
 
     return data
 

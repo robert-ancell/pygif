@@ -427,3 +427,82 @@ class LZWDecoder:
 class Writer:
     def __init__ (self, write_cb):
         self.write_cb = write_cb
+
+class LZWEncoder:
+    def __init__ (self, min_code_size = 3, max_code_size = 12, start_with_clear = True, clear_on_max_width = True):
+        self.min_code_size = min_code_size
+        self.max_code_size = max_code_size
+        self.clear_on_max_width = clear_on_max_width
+
+        # Codes being output
+        self.codes = []
+        self.data = b''
+        self.octet = 0x00
+        self.octet_bits = 0
+
+        # Code table
+        self.clear_code = 2 ** (min_code_size - 1)
+        self.eoi_code = self.clear_code + 1
+        self.code_table = {}
+        for i in range (2 ** (min_code_size - 1)):
+            self.code_table[(i,)] = i
+        self.next_code = self.eoi_code + 1
+
+        # Code currently being encoded
+        self.code = tuple ()
+        self.code_size = min_code_size
+
+        if start_with_clear:
+            self.write_code (self.clear_code)
+
+    def feed (self, values):
+        for value in values:
+            self.code += (value,)
+
+            if self.code in self.code_table:
+                continue
+
+            # If there are available bits, then add a new code
+            if self.next_code < 2 ** self.max_code_size:
+                new_code = self.next_code
+                self.next_code += 1
+                self.code_table[self.code] = new_code
+
+            self.write_code (self.code_table[self.code[:-1]])
+            self.code = self.code[-1:]
+
+            # Use enough bits to place the next code
+            if self.next_code == 2 ** self.code_size + 1:
+                self.code_size += 1
+
+            # Clear when out of codes
+            if self.next_code == 2 ** self.max_code_size and self.clear_on_max_width:
+                self.write_code (self.clear_code)
+                self.code_table = {}
+                for i in range (2 ** (self.min_code_size - 1)):
+                    self.code_table[(i,)] = i
+                self.code_size = self.min_code_size
+                self.next_code = self.eoi_code + 1
+
+    def finish (self, send_eoi = True):
+        # Write last code in progress
+        self.write_code (self.code_table[self.code])
+        if send_eoi:
+            self.write_code (self.eoi_code)
+        if self.octet_bits > 0:
+            self.data += struct.pack ('B', self.octet)
+
+    def write_code (self, code):
+        self.codes.append (code)
+
+        bits_needed = self.code_size
+        while bits_needed > 0:
+            bits_used = min (bits_needed, 8 - self.octet_bits)
+            self.octet |= (code << self.octet_bits) & 0xFF
+            self.octet_bits += bits_used
+            code >>= bits_used
+            bits_needed -= bits_used
+            if self.octet_bits == 8:
+                self.data += struct.pack ('B', self.octet)
+                self.octet = 0x00
+                self.octet_bits = 0
