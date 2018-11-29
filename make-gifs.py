@@ -211,24 +211,14 @@ def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi
     return stream
 
 import gif
+import io
 
 def make_lzw_data (values, start_code_size, start_with_clear = True, end_with_eoi = True, max_width = 12, clear_on_max_width = True, extra_data = b''):
-    encoder = gif.LZWEncoder (start_code_size, max_width, start_with_clear, clear_on_max_width)
+    buffer = io.BytesIO ()
+    encoder = gif.LZWEncoder (buffer, start_code_size, max_width, start_with_clear, clear_on_max_width)
     encoder.feed (values)
-    encoder.finish (end_with_eoi)
-
-    # Write starting code size
-    data = struct.pack ('B', start_code_size - 1)
-
-    offset = 0
-    lzw_data = encoder.data + extra_data
-    while offset < len (lzw_data):
-        length = min (len (lzw_data) - offset, 255)
-        data += struct.pack ('B', length) + lzw_data[offset: offset + length]
-        offset += length
-    data += struct.pack ('B', 0)
-
-    return data
+    encoder.finish (end_with_eoi, extra_data)
+    return buffer.getvalue ()
 
 def make_trailer ():
     return b'\x3b'
@@ -557,21 +547,3 @@ make_gif ('nul-application-extension', 'white-dot', 1, 1, palette8,
             make_image (1, 1, 3, [ WHITE ]) ])
 
 # FIXME: Multiple clears in a row
-
-# Regenerate the sample image from http://giflib.sourceforge.net/whatsinagif/
-colors = ['#ffffff', '#ff0000', '#0000ff', '#000000']
-values = [ 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
-           1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
-           1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
-           1, 1, 1, 0, 0, 0, 0, 2, 2, 2,
-           1, 1, 1, 0, 0, 0, 0, 2, 2, 2,
-           2, 2, 2, 0, 0, 0, 0, 1, 1, 1,
-           2, 2, 2, 0, 0, 0, 0, 1, 1, 1,
-           2, 2, 2, 2, 2, 1, 1, 1, 1, 1,
-           2, 2, 2, 2, 2, 1, 1, 1, 1, 1,
-           2, 2, 2, 2, 2, 1, 1, 1, 1, 1 ]
-data  = make_header (10, 10, colors, original_depth = 2)
-data += make_graphic_control_extension ()
-data += make_image (10, 10, 2, values)
-data += make_trailer ()
-open ('sample_1.gif', 'wb').write (data)

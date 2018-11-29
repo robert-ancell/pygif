@@ -2,6 +2,11 @@
 
 __all__ = [ 'Reader', 'Writer' ]
 
+DISPOSAL_NONE         = 0
+DISPOSAL_KEEP         = 1
+DISPOSAL_RESTORE_BG   = 2
+DISPOSAL_RESTORE_PREV = 3
+
 import struct
 
 class Block:
@@ -425,11 +430,94 @@ class LZWDecoder:
         return len (self.codes) > 0 and self.codes[-1] == self.eoi_code
 
 class Writer:
-    def __init__ (self, write_cb):
-        self.write_cb = write_cb
+    def __init__ (self, file):
+        self.file = file
+
+    def start (self, width, height, colors = [], original_depth = 8, background_color = 0, pixel_aspect_ratio = 0):
+        self.write_header ()
+        has_color_table = len (colors) > 0
+        self.write_screen_descriptor (width, height, has_color_table = has_color_table, depth = depth, original_depth = original_depth, background_color = background_color, pixel_aspect_ratio = pixel_aspect_ratio)
+        self.write_color_table (colors) # FIXME: Pad out colors
+
+    def write_header (self):
+        self.file.write (b'GIF89a') # FIXME: Support 87a version
+
+    def write_screen_descriptor (self, width, height, has_color_table = False, colors_sorted = False, depth = 1, original_depth = 8, background_color = 0, pixel_aspect_ratio = 0):
+        assert (0 <= width <= 65535)
+        assert (0 <= height <= 65535)
+        assert (1 <= depth <= 8)
+        assert (1 <= original_depth <= 8)
+
+        flags = 0x00
+        if has_color_table:
+            flags |= 0x80
+        flags |= depth - 1
+        flags = flags | (original_depth - 1) << 4
+        if colors_sorted:
+            flags |= 0x08
+        self.file.write (struct.pack ('<HHBBB', width, height, flags, background_color, pixel_aspect_ratio))
+
+    def write_color_table (self, colors):
+        for (red, green, blue) in colors:
+            self.file.write (struct.pack ('BBB', red, green, blue))
+
+    def write_image (self, left, top, width, height, pixels, colors = [], interlace = False, colors_sorted = False, reserved = 0):
+        has_color_table = len (colors) > 0
+
+        self.write_image_descriptor (left, top, width, height, has_color_table = has_color_table, depth = depth, interlace = interlace)
+        if len (colors) > 0:
+            self.write_color_table (colors) # FIXME: Pad out colors
+        encoder = LZWEncoder ()
+        encoder.feed (pixels)
+        encoder.finish ()
+        self.write_image_data (encoder.data)
+
+    def write_image_descriptor (self, left, top, width, height, has_color_table = False, depth = 1, interlace = False, colors_sorted = False, reserved = 0):
+        assert (0 <= width <= 65535)
+        assert (0 <= height <= 65535)
+        assert (0 <= left <= 65535)
+        assert (0 <= top <= 65535)
+        assert (1 <= depth <= 8)
+        assert (0 <= reserved <= 3)
+
+        flags = 0x00
+        if has_color_table:
+            flags |= 0x80
+        flags |= depth - 1
+        if interlace:
+            flags |= 0x40
+        if colors_sorted:
+            flags |= 0x20
+        flags |= reserved << 3
+        self.file.write (struct.pack ('<BHHHHB', 0x2C, left, top, width, height, flags))
+
+    def write_extension (self, label, blocks):
+        self.file.write (struct.pack ('BB', 0x21, label))
+        for block in blocks:
+            assert (len (block) < 256)
+            self.file.write (struct.pack ('B', len (block)))
+            self.file.write (block)
+        self.file.write (b'\x00')
+
+    def write_graphic_control_extension (self, disposal_method = DISPOSAL_NONE, delay_time = 0, user_input = False, has_transparent = False, transparent_color = 0, reserved = 0):
+        assert (0 <= disposal_method <= 7)
+        assert (0 <= reserved <= 7)
+        assert (0 <= delay_time <= 65535)
+        flags = 0x00
+        flags |= disposal_method << 2
+        if user_input:
+            flags |= 0x02
+        if has_transparent:
+            flags |= 0x01
+        data = struct.pack ('<BHB', flags, delay_time, transparent_color)
+        self.write_extension (0xf9, [data])
+
+    def write_trailer (self):
+        self.file.write (b'\x3b')
 
 class LZWEncoder:
-    def __init__ (self, min_code_size = 3, max_code_size = 12, start_with_clear = True, clear_on_max_width = True):
+    def __init__ (self, file, min_code_size = 3, max_code_size = 12, start_with_clear = True, clear_on_max_width = True):
+        self.file = file
         self.min_code_size = min_code_size
         self.max_code_size = max_code_size
         self.clear_on_max_width = clear_on_max_width
@@ -453,6 +541,8 @@ class LZWEncoder:
 
         if start_with_clear:
             self.write_code (self.clear_code)
+
+        self.file.write (struct.pack ('B', min_code_size - 1))
 
     def feed (self, values):
         for value in values:
@@ -483,13 +573,25 @@ class LZWEncoder:
                 self.code_size = self.min_code_size
                 self.next_code = self.eoi_code + 1
 
-    def finish (self, send_eoi = True):
+    def finish (self, send_eoi = True, extra_data = None):
         # Write last code in progress
         self.write_code (self.code_table[self.code])
         if send_eoi:
             self.write_code (self.eoi_code)
         if self.octet_bits > 0:
             self.data += struct.pack ('B', self.octet)
+
+        if extra_data is not None:
+            self.data += extra_data
+
+        # Write remaining blocks
+        if len (self.data) > 0:
+            self.file.write (struct.pack ('B', len (self.data)))
+            self.file.write (self.data)
+        self.file.write (b'\x00')
+
+        self.data = b''
+        self.code = tuple ()
 
     def write_code (self, code):
         bits_needed = self.code_size
@@ -501,5 +603,9 @@ class LZWEncoder:
             bits_needed -= bits_used
             if self.octet_bits == 8:
                 self.data += struct.pack ('B', self.octet)
+                if len (self.data) == 255:
+                    self.file.write (b'\xff')
+                    self.file.write (self.data)
+                    self.data = b''
                 self.octet = 0x00
                 self.octet_bits = 0
