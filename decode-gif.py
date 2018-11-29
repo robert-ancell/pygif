@@ -174,22 +174,15 @@ def decode_extension (label, blocks):
                 else:
                     print ('  Sub-Block %d: %s' % (block[0], repr (block[1:])))
         elif identifier == 'XMP Data':
-            data = b''
-            description = ''
+            metadata = b''
             for block in blocks[1:]:
-                data += block
-            magic_trailer = b'\x01'
-            for i in range (255, -1, -1):
-                magic_trailer += struct.pack ('B', i)
-            if data.endswith (magic_trailer):
-                data = data[:-len (magic_trailer)]
-            else:
-                description = ' (no-magic-trailer)'
+                metadata += struct.pack ('B', len (block)) + block
+            metadata = metadata[:-257]
 
             print ('XMP Data Extension:')
             if authentication_code != 'XMP':
                 print ('  Authentication Code: %s' % repr (authentication_code))
-            print ('  Metadata%s: %s' % (description, repr (data)))
+            print ('  Metadata: %s' % repr (metadata))
         elif identifier == 'ICCRGBG1':
             print ('ICC Color Profile Extension:')
             data = b''
