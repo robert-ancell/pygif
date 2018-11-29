@@ -104,6 +104,30 @@ class ApplicationExtension (Extension):
     def get_data (self):
         return self.get_subblocks ()[1:]
 
+def decode_animation_subblocks (block):
+    loop_count = None
+    buffer_size = None
+    unused_subblocks = []
+    for subblock in block.get_subblocks ()[1:]:
+        id = subblock[0]
+        if id == 1 and len (subblock) == 3:
+            (loop_count,) = struct.unpack ('<xH', subblock)
+        elif id == 2 and len (subblock) == 5:
+            (buffer_size,) = struct.unpack ('<xI', subblock)
+        else:
+            unused_subblocks.append ((id, subblock[1:]))
+    return (loop_count, buffer_size, unused_subblocks)
+
+class NetscapeExtension (ApplicationExtension):
+    def __init__ (self, reader, offset, length):
+        ApplicationExtension.__init__ (self, reader, offset, length, 'NETSCAPE', '2.0')
+        (self.loop_count, self.buffer_size, self.unused_subblocks) = decode_animation_subblocks (self)
+
+class AnimationExtension (ApplicationExtension):
+    def __init__ (self, reader, offset, length):
+        ApplicationExtension.__init__ (self, reader, offset, length, 'ANIMEXTS', '1.0')
+        (self.loop_count, self.buffer_size, self.unused_subblocks) = decode_animation_subblocks (self)
+
 class XMPDataExtension (ApplicationExtension):
     def __init__ (self, reader, offset, length):
         ApplicationExtension.__init__ (self, reader, offset, length, 'XMP Data', 'XMP')
@@ -113,6 +137,16 @@ class XMPDataExtension (ApplicationExtension):
         # a magic suffix that turns the XML text into valid GIF blocks.
         # We just need the raw blocks without the suffix
         return self.reader.buffer[self.offset + 14: self.offset + self.length - 258]
+
+class ICCColorProfileExtension (ApplicationExtension):
+    def __init__ (self, reader, offset, length):
+        ApplicationExtension.__init__ (self, reader, offset, length, 'ICCRGBG1', '012')
+
+    def get_icc_profile (self):
+        data = b''
+        for subblock in self.get_subblocks ():
+            data += subblock
+        return data
 
 class Trailer (Block):
     def __init__ (self, reader, offset, length):
@@ -248,8 +282,14 @@ class Reader:
                 elif label == 0xff and len (first_subblock) == 11:
                     identifier = first_subblock[:8].decode ('ascii')
                     authentication_code = first_subblock[8:11].decode ('ascii')
-                    if identifier == 'XMP Data' and authentication_code == 'XMP':
+                    if identifier == 'NETSCAPE' and authentication_code == '2.0':
+                        block = NetscapeExtension (self, block_start, block_length)
+                    elif identifier == 'ANIMEXTS' and authentication_code == '1.0':
+                        block = AnimationExtension (self, block_start, block_length)
+                    elif identifier == 'XMP Data' and authentication_code == 'XMP':
                         block = XMPDataExtension (self, block_start, block_length)
+                    elif identifier == 'ICCRGBG1' and authentication_code == '012':
+                        block = ICCColorProfileExtension (self, block_start, block_length)
                     else:
                         block = ApplicationExtension (self, block_start, block_length, identifier, authentication_code)
                 else:
