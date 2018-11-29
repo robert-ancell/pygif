@@ -1,14 +1,43 @@
 #!/usr/bin/python3
 
+import configparser
 import gif
 import itertools
 import math
 
-test_count = 0
-def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a):
-    global test_count
+def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, expect_loop = False):
+    # Add to list of tests
+    test_list = open ('test-suite/TESTS').readlines ()
+    line = name + '\n'
+    if not line in test_list:
+        test_list.append (line)
+        open ('test-suite/TESTS', 'w').writelines (test_list)
 
-    filename = 'test-images/%03d_%s_%s.gif' % (test_count, name, result)
+    # Write test description
+    config = configparser.ConfigParser ()
+    def yes_no (value):
+        if value:
+            return 'yes'
+        else:
+            return 'no'
+    config['config'] = { 'input': '%s.gif' % name,
+                         'loop': yes_no (expect_loop) }
+    if isinstance (result, list):
+        frames = []
+        for (i, (image, delay)) in enumerate (result):
+            id = 'frame%d' % i
+            frames.append (id)
+            config[id] = { 'image': '%s.png' % image }
+            if delay > 0:
+                config[id]['delay'] = '%d' % delay
+        config['config']['frames'] = ';'.join (frames)
+    else:
+        config['config']['frames'] = 'frame0'
+        config['frame0'] = { 'image': '%s.png' % result }
+    config.write (open ('test-suite/%s.conf' % name, 'w'))
+
+    # Write test GIF
+    filename = 'test-suite/%s.gif' % name
     writer = gif.Writer (open (filename, 'wb'))
     writer.write_header (version)
     if len (colors) > 0:
@@ -17,8 +46,6 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
         writer.write_color_table (colors, depth)
     else:
         writer.write_screen_descriptor (width, height, background_color = background_color)
-
-    test_count += 1
 
     return writer
 
@@ -295,7 +322,7 @@ writer.write_trailer ()
 # FIXME: NETSCAPE with multiple loop fields
 
 # Animated image
-writer = make_gif ('animation', 'animation', 2, 2, palette2)
+writer = make_gif ('animation', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (delay_time = 50)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
@@ -308,7 +335,7 @@ writer.write_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK])
 writer.write_trailer ()
 
 # Animation with variable frame speed
-writer = make_gif ('animation-speed', 'animation', 2, 2, palette2)
+writer = make_gif ('animation-speed', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (delay_time = 25)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
@@ -322,7 +349,7 @@ writer.write_trailer ()
 
 # Animated image with subimages
 # NOTE: RESTORE_BG appears to be interpreted as transparency
-writer = make_gif ('animation-subimage', 'animation', 2, 2, palette2)
+writer = make_gif ('animation-subimage', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (gif.DisposalMethod.RESTORE_BACKGROUND, delay_time = 50)
 writer.write_image (1, 1, 1, [ WHITE ], 0, 0)
@@ -348,7 +375,7 @@ writer.write_image (1, 1, 1, [ WHITE ], 0, 1)
 writer.write_trailer ()
 
 # Background with animated subimages that move over initial background
-writer = make_gif ('animation-subimage-move', 'animation', 2, 2, palette2)
+writer = make_gif ('animation-subimage-move', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_image (2, 2, 1, [ BLACK, BLACK, BLACK, BLACK ])
 writer.write_graphic_control_extension (gif.DisposalMethod.RESTORE_PREVIOUS, delay_time = 50)
@@ -365,7 +392,7 @@ writer.write_trailer ()
 
 # Animation with multiple images per frame
 # NOTE: Everyone seems to be doing this wrong...
-writer = make_gif ('animation-multi-image', 'animation', 2, 1, palette4)
+writer = make_gif ('animation-multi-image', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 1, palette4)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_image (2, 1, 2, [ BLACK, RED ])
 writer.write_graphic_control_extension (delay_time = 50)
