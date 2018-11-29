@@ -25,14 +25,24 @@ class Image (Block):
         self.interlace = interlace
         self.lzw_min_code_size = lzw_min_code_size
 
-    def get_pixels (self):
+    def get_lzw_data (self):
         offset = self.offset + 10 + len (self.color_table) * 3 + 1
         (subblock_offsets, _) = get_subblocks (self.reader.buffer, offset)
         data = b''
-        for offset in subblock_offsets:
-            data == get_subblock (self.reader.buffer, offset)
-        (_, _, _, values, _) = lzw_decode (data, self.lzw_min_code_size)
-        return values
+        for (offset, length) in subblock_offsets:
+            data += self.reader.buffer[offset: offset + length]
+        return data
+
+    def decode_lzw (self):
+        offset = self.offset + 10 + len (self.color_table) * 3 + 1
+        (subblock_offsets, _) = get_subblocks (self.reader.buffer, offset)
+        decoder = LZWDecoder (self.lzw_min_code_size)
+        for (offset, length) in subblock_offsets:
+            decoder.feed (self.reader.buffer, offset, length)
+        return decoder
+
+    def get_pixels (self):
+        return self.decode_lzw ().values
 
 class Extension (Block):
     def __init__ (self, reader, offset, length, label):
@@ -44,8 +54,8 @@ class Extension (Block):
         if subblock_offsets is None:
             return []
         subblocks = []
-        for offset in subblock_offsets:
-            subblocks.append (get_subblock (self.reader.buffer, offset))
+        for (offset, length) in subblock_offsets:
+            subblocks.append (self.reader.buffer[offset: offset + length])
         return subblocks
 
 class PlainTextExtension (Extension):
@@ -217,7 +227,8 @@ class Reader:
                 block_length += subblocks_length
 
                 if len (subblock_offsets) > 0:
-                    first_subblock = get_subblock (self.buffer, subblock_offsets[0])
+                    (offset, length) = subblock_offsets[0]
+                    first_subblock = self.buffer[offset: offset + length]
                 else:
                     first_subblock = b''
 
@@ -273,92 +284,98 @@ def get_subblocks (data, offset):
         n_required += 1
         if subblock_size == 0:
             return (subblocks, n_required)
-        subblocks.append (offset + n_required - 1)
+        subblocks.append ((offset + n_required, subblock_size))
         n_required += subblock_size
         if n_available < n_required:
             return (None, 0)
 
-def get_subblock (data, offset):
-    length = data[offset]
-    return data[offset + 1: offset + 1 + length]
+class LZWDecoder:
+    def __init__ (self, min_code_size = 3, max_code_size = 12):
+        self.min_code_size = min_code_size
+        self.max_code_size = max_code_size
 
-def lzw_decode (data, start_code_size, max_code_size = 12):
-    values = []
-    first_code_is_clear = False
-    clear_count = 0
-    code = 0
-    code_bits = 0
-    code_count = 0
-    code_size = start_code_size
-    (codes, clear_code, eoi_code) = make_code_table (code_size)
-    last_code = clear_code
-    for (index, d) in enumerate (data):
-        n_available = 8
-        while n_available > 0:
-            # Number of bits to get
-            n_bits = min (code_size - code_bits, n_available)
+        # Codes and values to output
+        self.codes = []
+        self.values = []
+        self.n_used = 0
 
-            # Extract bits from octet
-            new_bits = d & ((1 << n_bits) - 1)
-            d >>= n_bits
-            n_available -= n_bits
+        # Code table
+        self.clear_code = 2 ** (min_code_size - 1)
+        self.eoi_code = self.clear_code + 1
+        self.code_table = []
+        for i in range (2 ** (min_code_size - 1)):
+            self.code_table.append ((i,))
+        self.code_table.append (self.clear_code)
+        self.code_table.append (self.eoi_code)
 
-            # Add new bits to the top of the code
-            code = new_bits << code_bits | code
-            code_bits += n_bits
+        # Code currently being decoded
+        self.code = 0                       # Current bits of code
+        self.code_bits = 0                  # Current number of bits
+        self.code_size = self.min_code_size # Required number of bits
+        self.last_code = self.clear_code    # Previous code processed
 
-            # Keep going until we get a full code word
-            if code_bits < code_size:
-                continue
-            code_count += 1
+    def feed (self, data, offset = 0, length = -1):
+        if length < 0:
+            length = len (data) - offset
+        for i in range (offset, offset + length):
+            d = data[i]
+            self.n_used += 1
+            n_available = 8
+            while n_available > 0:
+                # Number of bits to get
+                n_bits = min (self.code_size - self.code_bits, n_available)
 
-            # Check if the first code is a clear
-            if code == clear_code:
-                if code_count == 1:
-                    first_code_is_clear = True
+                # Extract bits from octet
+                new_bits = d & ((1 << n_bits) - 1)
+                d >>= n_bits
+                n_available -= n_bits
+
+                # Add new bits to the top of the code
+                self.code = new_bits << self.code_bits | self.code
+                self.code_bits += n_bits
+
+                # Keep going until we get a full code word
+                if self.code_bits < self.code_size:
+                    continue
+                code = self.code
+                self.code = 0
+                self.code_bits = 0
+                self.codes.append (code)
+
+                # Stop on end of information code
+                if code == self.eoi_code:
+                    return
+
+                # Reset code table on clear
+                if code == self.clear_code:
+                    self.code_size = self.min_code_size
+                    self.code_table = self.code_table[:self.eoi_code + 1]
+                    self.last_code = code
+                    continue
+
+                if code < len (self.code_table):
+                    for v in self.code_table[code]:
+                        self.values.append (v)
+                    if self.last_code != self.clear_code and len (self.code_table) < 2 ** self.max_code_size - 1:
+                        self.code_table.append (self.code_table[self.last_code] + (self.code_table[code][0],))
+                        assert (len (self.code_table) < 2 ** self.max_code_size)
+                        if len (self.code_table) == 2 ** self.code_size and self.code_size < self.max_code_size:
+                            self.code_size += 1
+                    self.last_code = code
+                elif code == len (self.code_table):
+                    if len (self.code_table) < 2 ** self.max_code_size - 1:
+                        self.code_table.append (self.code_table[self.last_code] + (self.code_table[self.last_code][0],))
+                        assert (len (self.code_table) < 2 ** self.max_code_size)
+                        if len (self.code_table) == 2 ** self.code_size and self.code_size < self.max_code_size:
+                            self.code_size += 1
+                    for v in self.code_table[-1]:
+                        self.values.append (v)
+                    self.last_code = code
                 else:
-                    clear_count += 1
+                    print ('Ignoring unexpected code %d' % code)
 
-            if code == eoi_code:
-                return (first_code_is_clear, clear_count, True, values, data[index + 1:])
-            elif code == clear_code:
-                code_size = start_code_size
-                (codes, clear_code, eoi_code) = make_code_table (code_size)
-                last_code = clear_code
-            elif code < len (codes):
-                for v in codes[code]:
-                    values.append (v)
-                if last_code != clear_code and len (codes) < 2 ** max_code_size - 1:
-                    codes.append (codes[last_code] + (codes[code][0],))
-                    assert (len (codes) < 2 ** max_code_size)
-                    if len (codes) == 2 ** code_size and code_size < max_code_size:
-                        code_size += 1
-                last_code = code
-            elif code == len (codes):
-                if len (codes) < 2 ** max_code_size - 1:
-                    codes.append (codes[last_code] + (codes[last_code][0],))
-                    assert (len (codes) < 2 ** max_code_size)
-                    if len (codes) == 2 ** code_size and code_size < max_code_size:
-                        code_size += 1
-                for v in codes[-1]:
-                    values.append (v)
-                last_code = code
-            else:
-                print ('Ignoring unexpected code %d' % code)
-            code = 0
-            code_bits = 0
-
-    return (first_code_is_clear, clear_count, False, values, b'')
-
-def make_code_table (code_size):
-    codes = []
-    for i in range (2 ** (code_size - 1)):
-        codes.append ((i,))
-    clear_code = 2 ** (code_size - 1)
-    eoi_code = clear_code + 1
-    codes.append (clear_code)
-    codes.append (eoi_code)
-    return (codes, clear_code, eoi_code)
+    def is_complete (self):
+        return len (self.codes) > 0 and self.codes[-1] == self.eoi_code
 
 class Writer:
     def __init__ (self, write_cb):
