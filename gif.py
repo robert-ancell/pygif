@@ -2,12 +2,24 @@
 
 __all__ = [ 'Reader', 'Writer' ]
 
-DISPOSAL_NONE         = 0
-DISPOSAL_KEEP         = 1
-DISPOSAL_RESTORE_BG   = 2
-DISPOSAL_RESTORE_PREV = 3
-
 import struct
+
+class DisposalMethod:
+    NONE               = 0
+    KEEP               = 1
+    RESTORE_BACKGROUND = 2
+    RESTORE_PREVIUS    = 3
+
+class ExtensionLabel:
+    PLAIN_TEXT         = 0x01
+    GRAPHIC_CONTROL    = 0xf9
+    COMMENT            = 0xfe
+    APPLICATION        = 0xff
+
+class BlockType:
+    EXTENSION          = 0x21
+    IMAGE              = 0x2c
+    TRAILER            = 0x3b
 
 class Block:
     def __init__ (self, reader, offset, length):
@@ -65,7 +77,7 @@ class Extension (Block):
 
 class PlainTextExtension (Extension):
     def __init__ (self, reader, offset, length, left, top, width, height, cell_width, cell_height, foreground_color, background_color):
-        Extension.__init__ (self, reader, offset, length, 0x01)
+        Extension.__init__ (self, reader, offset, length, ExtensionLabel.PLAIN_TEXT)
         self.left = left
         self.top = top
         self.width = width
@@ -83,7 +95,7 @@ class PlainTextExtension (Extension):
 
 class GraphicControlExtension (Extension):
     def __init__ (self, reader, offset, length, disposal_method, delay_time, user_input, has_transparent, transparent_color):
-        Extension.__init__ (self, reader, offset, length, 0xf9)
+        Extension.__init__ (self, reader, offset, length, ExtensionLabel.GRAPHIC_CONTROL)
         self.disposal_method = disposal_method
         self.delay_time = delay_time
         self.user_input = user_input
@@ -92,7 +104,7 @@ class GraphicControlExtension (Extension):
 
 class CommentExtension (Extension):
     def __init__ (self, reader, offset, length):
-        Extension.__init__ (self, reader, offset, length, 0xfe)
+        Extension.__init__ (self, reader, offset, length, ExtensionLabel.COMMENT)
 
     def get_comment (self, encoding = 'utf-8'):
         data = b''
@@ -102,7 +114,7 @@ class CommentExtension (Extension):
 
 class ApplicationExtension (Extension):
     def __init__ (self, reader, offset, length, identifier, authentication_code):
-        Extension.__init__ (self, reader, offset, length, 0xff)
+        Extension.__init__ (self, reader, offset, length, ExtensionLabel.APPLICATION)
         self.identifier = identifier
         self.authentication_code = authentication_code
 
@@ -216,7 +228,7 @@ class Reader:
             block_length = 1
 
             # Image
-            if block_type == 0x2c:
+            if block_type == BlockType.IMAGE:
                 block_length += 9
                 if n_available < block_length:
                     return
@@ -255,7 +267,7 @@ class Reader:
                 self.blocks.append (block)
 
             # Extension
-            elif block_type == 0x21:
+            elif block_type == BlockType.EXTENSION:
                 block_length += 1
                 if n_available < block_length:
                     return
@@ -273,18 +285,18 @@ class Reader:
                 else:
                     first_subblock = b''
 
-                if label == 0x01 and len (first_subblock) == 12:
+                if label == ExtensionLabel.PLAIN_TEXT and len (first_subblock) == 12:
                     (left, top, width, height, cell_width, cell_height, foreground_color, background_color) = struct.unpack ('<HHHHBBBB', subblocks[0])
                     block = PlainTextExtension (self, block_start, block_length, left, top, width, height, cell_width, cell_height, foreground_color, background_color)
-                elif label == 0xf9 and len (first_subblock) == 4:
+                elif label == ExtensionLabel.GRAPHIC_CONTROL and len (first_subblock) == 4:
                     (flags, delay_time, transparent_color) = struct.unpack ('<BHB', first_subblock)
                     disposal_method = flags >> 2 & 0x7
                     user_input = flags & 0x02 != 0
                     has_transparent = flags & 0x01 != 0
                     block = GraphicControlExtension (self, block_start, block_length, disposal_method, delay_time, user_input, has_transparent, transparent_color)
-                elif label == 0xfe:
+                elif label == ExtensionLabel.COMMENT:
                     block = CommentExtension (self, block_start, block_length)
-                elif label == 0xff and len (first_subblock) == 11:
+                elif label == ExtensionLabel.APPLICATION and len (first_subblock) == 11:
                     identifier = first_subblock[:8].decode ('ascii')
                     authentication_code = first_subblock[8:11].decode ('ascii')
                     if identifier == 'NETSCAPE' and authentication_code == '2.0':
@@ -302,7 +314,7 @@ class Reader:
                 self.blocks.append (block)
 
             # Trailer
-            elif block_type == 0x3b:
+            elif block_type == BlockType.TRAILER:
                 self.blocks.append (Trailer (self, block_start, 1))
                 return
 
@@ -489,7 +501,7 @@ class Writer:
         if colors_sorted:
             flags |= 0x20
         flags |= reserved << 3
-        self.file.write (struct.pack ('<BHHHHB', 0x2C, left, top, width, height, flags))
+        self.file.write (struct.pack ('<BHHHHB', BlockType.IMAGE, left, top, width, height, flags))
 
     def write_extension (self, label, blocks):
         self.write_extension_header (label)
@@ -498,7 +510,7 @@ class Writer:
         self.write_extension_trailer ()
 
     def write_extension_header (self, label):
-        self.file.write (struct.pack ('BB', 0x21, label))
+        self.file.write (struct.pack ('BB', BlockType.EXTENSION, label))
 
     def write_extension_block (self, block):
         assert (len (block) < 256)
@@ -517,14 +529,14 @@ class Writer:
         assert (0 <= cell_height <= 255)
         assert (0 <= foreground_color <= 255)
         assert (0 <= background_color <= 255)
-        self.write_extension_header (0x01)
+        self.write_extension_header (ExtensionLabel.PLAIN_TEXT)
         self.write_extension_block (struct.pack ('<HHHHBBBB', left, top, width, height, cell_width, cell_height, foreground_color, background_color))
         while len (text) > 0:
             self.write_extension_block (bytes (text[:255], 'ascii'))
             text = text[254:]
         self.write_extension_trailer ()
 
-    def write_graphic_control_extension (self, disposal_method = DISPOSAL_NONE, delay_time = 0, user_input = False, has_transparent = False, transparent_color = 0, reserved = 0):
+    def write_graphic_control_extension (self, disposal_method = DisposalMethod.NONE, delay_time = 0, user_input = False, has_transparent = False, transparent_color = 0, reserved = 0):
         assert (0 <= disposal_method <= 7)
         assert (0 <= reserved <= 7)
         assert (0 <= delay_time <= 65535)
@@ -534,12 +546,12 @@ class Writer:
             flags |= 0x02
         if has_transparent:
             flags |= 0x01
-        self.write_extension_header (0xf9)
+        self.write_extension_header (ExtensionLabel.GRAPHIC_CONTROL)
         self.write_extension_block (struct.pack ('<BHB', flags, delay_time, transparent_color))
         self.write_extension_trailer ()
 
     def write_comment_extension (self, text):
-        self.write_extension_header (0xfe)
+        self.write_extension_header (ExtensionLabel.COMMENT)
         while len (text) > 0:
             self.write_extension_block (bytes (text[:255], 'utf-8'))
             text = text[254:]
@@ -554,7 +566,7 @@ class Writer:
         self.write_extension_trailer ()
 
     def write_application_extension_header (self, application_identifier, application_authentication_code):
-        self.write_extension_header (0xff)
+        self.write_extension_header (ExtensionLabel.APPLICATION)
         self.write_extension_block (bytes (application_identifier + application_authentication_code, 'ascii'))
 
     def write_netscape_extension (self, loop_count = -1, buffer_size = -1):
@@ -596,7 +608,7 @@ class Writer:
         self.write_extension_trailer ()
 
     def write_trailer (self):
-        self.file.write (b'\x3b')
+        self.file.write (struct.pack ('B', BlockType.TRAILER))
 
 class LZWEncoder:
     def __init__ (self, file, min_code_size = 3, max_code_size = 12, start_with_clear = True, clear_on_max_width = True):
@@ -680,7 +692,7 @@ class LZWEncoder:
         bits_needed = self.code_size
         while bits_needed > 0:
             bits_used = min (bits_needed, 8 - self.octet_bits)
-            self.octet |= (code << self.octet_bits) & 0xFF
+            self.octet |= (code << self.octet_bits) & 0xff
             self.octet_bits += bits_used
             code >>= bits_used
             bits_needed -= bits_used
