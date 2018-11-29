@@ -463,21 +463,6 @@ class Writer:
     def __init__ (self, file):
         self.file = file
 
-    # FIXME: Give a proper name?
-    def write_headers (self, width, height, colors = [], original_depth = 8, background_color = 0, pixel_aspect_ratio = 0):
-        has_color_table = len (colors) > 0
-        if has_color_table:
-            from math import ceil, log2
-            depth = max (ceil (log2 (len (colors))), 1)
-        else:
-            depth = 1
-        assert (1 <= depth <= 8)
-
-        self.write_header ()
-        self.write_screen_descriptor (width, height, has_color_table = has_color_table, depth = depth, original_depth = original_depth, background_color = background_color, pixel_aspect_ratio = pixel_aspect_ratio)
-        if has_color_table:
-            self.write_color_table (colors, depth)
-
     def write_header (self):
         self.file.write (b'GIF89a') # FIXME: Support 87a version
 
@@ -671,7 +656,7 @@ class LZWEncoder:
         self.code_size = self.min_code_size + 1
 
         if start_with_clear:
-            self.write_code (self.clear_code)
+            self._write_code (self.clear_code)
 
         self.file.write (struct.pack ('B', self.min_code_size))
 
@@ -688,7 +673,7 @@ class LZWEncoder:
                 self.next_code += 1
                 self.code_table[self.code] = new_code
 
-            self.write_code (self.code_table[self.code[:-1]])
+            self._write_code (self.code_table[self.code[:-1]])
             self.code = self.code[-1:]
 
             # Use enough bits to place the next code
@@ -697,7 +682,7 @@ class LZWEncoder:
 
             # Clear when out of codes
             if self.next_code == 2 ** self.max_code_size and self.clear_on_max_width:
-                self.write_code (self.clear_code)
+                self._write_code (self.clear_code)
                 self.code_table = {}
                 for i in range (2 ** self.min_code_size):
                     self.code_table[(i,)] = i
@@ -706,9 +691,9 @@ class LZWEncoder:
 
     def finish (self, send_eoi = True, extra_data = None):
         # Write last code in progress
-        self.write_code (self.code_table[self.code])
+        self._write_code (self.code_table[self.code])
         if send_eoi:
-            self.write_code (self.eoi_code)
+            self._write_code (self.eoi_code)
         if self.octet_bits > 0:
             self.data += struct.pack ('B', self.octet)
 
@@ -726,7 +711,7 @@ class LZWEncoder:
         self.data = b''
         self.code = tuple ()
 
-    def write_code (self, code):
+    def _write_code (self, code):
         bits_needed = self.code_size
         while bits_needed > 0:
             bits_used = min (bits_needed, 8 - self.octet_bits)

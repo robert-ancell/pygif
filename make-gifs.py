@@ -10,7 +10,13 @@ def make_gif (name, result, width, height, colors = [], background_color = 0):
 
     filename = 'test-images/%03d_%s_%s.gif' % (test_count, name, result)
     writer = gif.Writer (open (filename, 'wb'))
-    writer.write_headers (width, height, colors, background_color = background_color)
+    writer.write_header ()
+    if len (colors) > 0:
+        depth = math.ceil (math.log2 (len (colors)))
+        writer.write_screen_descriptor (width, height, has_color_table = True, depth = depth, background_color = background_color)
+        writer.write_color_table (colors, depth)
+    else:
+        writer.write_screen_descriptor (width, height, background_color = background_color)
 
     test_count += 1
 
