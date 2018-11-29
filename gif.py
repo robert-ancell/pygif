@@ -433,6 +433,7 @@ class Writer:
     def __init__ (self, file):
         self.file = file
 
+    # FIXME: Give a proper name?
     def start (self, width, height, colors = [], original_depth = 8, background_color = 0, pixel_aspect_ratio = 0):
         self.write_header ()
         has_color_table = len (colors) > 0
@@ -457,9 +458,8 @@ class Writer:
             flags |= 0x08
         self.file.write (struct.pack ('<HHBBB', width, height, flags, background_color, pixel_aspect_ratio))
 
-    def write_color_table (self, colors):
-        for (red, green, blue) in colors:
-            self.file.write (struct.pack ('BBB', red, green, blue))
+    def write_color (self, red, green, blue):
+        self.file.write (struct.pack ('BBB', red, green, blue))
 
     def write_image (self, left, top, width, height, pixels, colors = [], interlace = False, colors_sorted = False, reserved = 0):
         has_color_table = len (colors) > 0

@@ -6,26 +6,6 @@ import itertools
 import math
 import struct
 
-HEADER_87A = b'GIF87a'
-HEADER_89A = b'GIF89a'
-
-def make_header (width, height, colors, original_depth = 8, header = HEADER_89A, background_color = 0, pixel_aspect_ratio = 0, colors_sorted = False):
-    assert (0 <= width <= 65535)
-    assert (0 <= height <= 65535)
-    assert (1 <= original_depth <= 8)
-
-    color_table_size = get_color_table_size (colors)
-    assert (color_table_size <= 8)
-
-    flags = 0x00
-    if color_table_size > 0:
-        flags |= 0x80
-        flags |= color_table_size - 1
-    flags = flags | (original_depth - 1) << 4
-    if colors_sorted:
-        flags |= 0x08
-    return struct.pack ('<6sHHBBB', header, width, height, flags, background_color, pixel_aspect_ratio) + make_color_table (colors)
-
 def make_image (width, height, depth, values, left = 0, top = 0, colors = [], interlace = False, colors_sorted = False, reserved = 0, start_code_size = -1, start_with_clear = True, end_with_eoi = True, max_width = 12, clear_on_max_width = True, extra_data = b''):
     assert (0 <= width <= 65535)
     assert (0 <= height <= 65535)
@@ -33,7 +13,7 @@ def make_image (width, height, depth, values, left = 0, top = 0, colors = [], in
     assert (0 <= top <= 65535)
     assert (0 <= reserved <= 3)
 
-    color_table_size = get_color_table_size (colors)
+    color_table_size = get_depth (colors)
     assert (color_table_size <= 8)
 
     # Image descriptor
@@ -65,7 +45,7 @@ def make_image (width, height, depth, values, left = 0, top = 0, colors = [], in
 
     return data
 
-def get_color_table_size (colors):
+def get_depth (colors):
     n_colors = len (colors)
     if n_colors == 0:
         return 0
@@ -85,7 +65,7 @@ def make_color_table (colors):
     for color in colors:
         (red, green, blue) = parse_color (color)
         data += struct.pack ('BBB', red, green, blue)
-    for i in range (len (colors) - 1, get_color_table_size (colors)):
+    for i in range (len (colors) - 1, get_depth (colors)):
         data += struct.pack ('BBB', 0, 0, 0)
     return data
 
@@ -168,13 +148,27 @@ def make_trailer ():
 test_count = 0
 def make_gif (name, result, width, height, colors, blocks, background_color = 0):
     global test_count
-    data = make_header (width, height, colors, background_color = background_color)
-    for block in blocks:
-        data += block
-    data += make_trailer ()
 
     filename = 'test-images/%03d_%s_%s.gif' % (test_count, name, result)
-    open (filename, 'wb').write (data)
+    writer = gif.Writer (open (filename, 'wb'))
+
+    has_color_table = len (colors) > 0
+    depth = get_depth (colors)
+    if depth == 0:
+        depth = 1 # FIXME: HACK
+    assert (1 <= depth <= 8)
+
+    writer.write_header ()
+    writer.write_screen_descriptor (width, height, depth = depth, has_color_table = has_color_table, background_color = background_color)
+    if has_color_table:
+        for color in colors:
+            (red, green, blue) = parse_color (color)
+            writer.write_color (red, green, blue)
+        for i in range (len (colors), 2 ** depth):
+            writer.write_color (0, 0, 0)
+    for block in blocks:
+        writer.file.write (block)
+    writer.write_trailer ()
     test_count += 1
 
 BLACK        = 0
