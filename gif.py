@@ -1,7 +1,24 @@
 #!/usr/bin/python3
 
 __version__  = '0.1'
-__all__      = [ 'Reader', 'Writer' ]
+__all__      = [ 'AnimationExtension',
+                 'ApplicationExtension',
+                 'Block',
+                 'CommentExtension',
+                 'DisposalMethod',
+                 'Extension',
+                 'GraphicControlExtension',
+                 'ICCColorProfileExtension',
+                 'Image',
+                 'LZWDecoder',
+                 'LZWEncoder',
+                 'NetscapeExtension',
+                 'PlainTextExtension',
+                 'Reader',
+                 'Trailer',
+                 'UnknownBlock',
+                 'Writer',
+                 'XMPDataExtension' ]
 
 import struct
 
@@ -9,7 +26,7 @@ class DisposalMethod:
     NONE               = 0
     KEEP               = 1
     RESTORE_BACKGROUND = 2
-    RESTORE_PREVIUS    = 3
+    RESTORE_PREVIOUS   = 3
 
 class ExtensionLabel:
     PLAIN_TEXT         = 0x01
@@ -699,9 +716,11 @@ class LZWEncoder:
             self.data += extra_data
 
         # Write remaining blocks
-        if len (self.data) > 0:
-            self.file.write (struct.pack ('B', len (self.data)))
-            self.file.write (self.data)
+        while len (self.data) > 0:
+            length = min (len (self.data), 255)
+            self.file.write (struct.pack ('B', length))
+            self.file.write (self.data[:length])
+            self.data = self.data[length:]
         self.file.write (b'\x00')
 
         self.data = b''
