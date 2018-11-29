@@ -475,7 +475,7 @@ class Writer:
     def write_header (self, version = Version.GIF89a):
         self.file.write (version)
 
-    def write_screen_descriptor (self, width, height, has_color_table = False, colors_sorted = False, depth = 1, original_depth = 8, background_color = 0, pixel_aspect_ratio = 0):
+    def write_screen_descriptor (self, width, height, has_color_table = False, depth = 1, colors_sorted = False, original_depth = 8, background_color = 0, pixel_aspect_ratio = 0):
         assert (0 <= width <= 65535)
         assert (0 <= height <= 65535)
         assert (1 <= depth <= 8)
@@ -501,7 +501,7 @@ class Writer:
         for i in range (len (colors), 2 ** depth):
             self.write_color (0, 0, 0)
 
-    def write_image (self, width, height, depth, pixels, left = 0, top = 0, global_colors = [], colors = [], interlace = False, colors_sorted = False, reserved = 0):
+    def write_image (self, width, height, depth, pixels, left = 0, top = 0, colors = [], interlace = False, colors_sorted = False, reserved = 0):
         has_color_table = len (colors) > 0
         if has_color_table:
             color_table_size = depth
