@@ -5,7 +5,7 @@ import gif
 import itertools
 import math
 
-def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0):
+def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, buffer_size = 0):
     # Add to list of tests
     test_list = open ('test-suite/TESTS').readlines ()
     line = name + '\n'
@@ -25,6 +25,7 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
         config['config']['loop-count'] = 'infinite'
     else:
         config['config']['loop-count'] = '%d' % loop_count
+    config['config']['buffer-size'] = '%d' % buffer_size
     if isinstance (result, list):
         frames = []
         for (i, (image, delay)) in enumerate (result):
@@ -307,15 +308,15 @@ writer = make_gif ('loop-max', 'white-dot', 1, 1, palette8, loop_count = 65535)
 writer.write_netscape_extension (loop_count = 65535)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-buffer', 'white-dot', 1, 1, palette8, loop_count = -1)
+writer = make_gif ('loop-buffer', 'white-dot', 1, 1, palette8, loop_count = -1, buffer_size = 1024)
 writer.write_netscape_extension (loop_count = 0, buffer_size = 1024)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-buffer_max', 'white-dot', 1, 1, palette8, loop_count = -1)
+writer = make_gif ('loop-buffer_max', 'white-dot', 1, 1, palette8, loop_count = -1, buffer_size = 4294967295)
 writer.write_netscape_extension (loop_count = 0, buffer_size = 4294967295)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-animexts', 'white-dot', 1, 1, palette8, loop_count = -1)
+writer = make_gif ('loop-animexts', 'white-dot', 1, 1, palette8, loop_count = -1, buffer_size = 1024)
 writer.write_animexts_extension (loop_count = 0, buffer_size = 1024)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
