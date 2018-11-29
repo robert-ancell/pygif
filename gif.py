@@ -149,7 +149,7 @@ class ICCColorProfileExtension (ApplicationExtension):
 
     def get_icc_profile (self):
         data = b''
-        for subblock in self.get_subblocks ():
+        for subblock in self.get_subblocks ()[1:]:
             data += subblock
         return data
 
@@ -492,12 +492,37 @@ class Writer:
         self.file.write (struct.pack ('<BHHHHB', 0x2C, left, top, width, height, flags))
 
     def write_extension (self, label, blocks):
-        self.file.write (struct.pack ('BB', 0x21, label))
+        self.write_extension_header (label)
         for block in blocks:
-            assert (len (block) < 256)
-            self.file.write (struct.pack ('B', len (block)))
-            self.file.write (block)
+            self.write_extension_block (block)
+        self.write_extension_trailer ()
+
+    def write_extension_header (self, label):
+        self.file.write (struct.pack ('BB', 0x21, label))
+
+    def write_extension_block (self, block):
+        assert (len (block) < 256)
+        self.file.write (struct.pack ('B', len (block)))
+        self.file.write (block)
+
+    def write_extension_trailer (self):
         self.file.write (b'\x00')
+
+    def write_plain_text_extension (self, text, left, top, width, height, cell_width, cell_height, foreground_color, background_color):
+        assert (0 <= left <= 65535)
+        assert (0 <= top <= 65535)
+        assert (0 <= width <= 65535)
+        assert (0 <= height <= 65535)
+        assert (0 <= cell_width <= 255)
+        assert (0 <= cell_height <= 255)
+        assert (0 <= foreground_color <= 255)
+        assert (0 <= background_color <= 255)
+        self.write_extension_header (0x01)
+        self.write_extension_block (struct.pack ('<HHHHBBBB', left, top, width, height, cell_width, cell_height, foreground_color, background_color))
+        while len (text) > 0:
+            self.write_extension_block (bytes (text[:255], 'ascii'))
+            text = text[254:]
+        self.write_extension_trailer ()
 
     def write_graphic_control_extension (self, disposal_method = DISPOSAL_NONE, delay_time = 0, user_input = False, has_transparent = False, transparent_color = 0, reserved = 0):
         assert (0 <= disposal_method <= 7)
@@ -509,8 +534,67 @@ class Writer:
             flags |= 0x02
         if has_transparent:
             flags |= 0x01
-        data = struct.pack ('<BHB', flags, delay_time, transparent_color)
-        self.write_extension (0xf9, [data])
+        self.write_extension_header (0xf9)
+        self.write_extension_block (struct.pack ('<BHB', flags, delay_time, transparent_color))
+        self.write_extension_trailer ()
+
+    def write_comment_extension (self, text):
+        self.write_extension_header (0xfe)
+        while len (text) > 0:
+            self.write_extension_block (bytes (text[:255], 'utf-8'))
+            text = text[254:]
+        self.write_extension_trailer ()
+
+    def write_application_extension (self, application_identifier, application_authentication_code, blocks):
+        assert (len (application_identifier) == 8)
+        assert (len (application_authentication_code) == 3)
+        self.write_application_extension_header (application_identifier, application_authentication_code)
+        for block in blocks:
+            self.write_extension_block (block)
+        self.write_extension_trailer ()
+
+    def write_application_extension_header (self, application_identifier, application_authentication_code):
+        self.write_extension_header (0xff)
+        self.write_extension_block (bytes (application_identifier + application_authentication_code, 'ascii'))
+
+    def write_netscape_extension (self, loop_count = -1, buffer_size = -1):
+        assert (loop_count < 65536)
+        assert (buffer_size < 4294967296)
+        self.write_application_extension_header ('NETSCAPE', '2.0')
+        if loop_count >= 0:
+            self.write_extension_block (struct.pack ('<BH', 1, loop_count))
+        if buffer_size >= 0:
+            self.write_extension_block (struct.pack ('<BI', 2, buffer_size))
+        self.write_extension_trailer ()
+
+    def write_animexts_extension (self, loop_count = -1, buffer_size = -1):
+        assert (loop_count < 65536)
+        self.write_application_extension_header ('ANIMEXTS', '1.0')
+        if loop_count >= 0:
+            self.write_extension_block (struct.pack ('<BH', 1, loop_count))
+        if buffer_size >= 0:
+            self.write_extension_block (struct.pack ('<BI', 2, buffer_size))
+        self.write_extension_trailer ()
+
+    def write_xmp_data_extension (self, metadata):
+        self.write_application_extension_header ('XMP Data', 'XMP')
+        # This extension uses a clever hack to put raw XML in the file - it uses
+        # a magic suffix that turns the XML text into valid GIF blocks.
+        self.file.write (bytes (metadata, 'utf-8'))
+        self.file.write (b'\x01')
+        for i in range (256):
+            print (0xff - i)
+            self.file.write (struct.pack ('B', 0xff - i))
+        self.file.write (b'\x00')
+
+    def write_icc_color_profile_extension (self, icc_profile):
+        self.write_application_extension_header ('ICCRGBG1', '012')
+        offset = 0
+        while offset < len (icc_profile):
+            length = min (len (icc_profile) - offset, 255)
+            self.write_extension_block (icc_profile[offset: offset + length])
+            offset += length
+        self.write_extension_trailer ()
 
     def write_trailer (self):
         self.file.write (b'\x3b')
