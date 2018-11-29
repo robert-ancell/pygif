@@ -18,7 +18,7 @@ def make_image (width, height, depth, values, left = 0, top = 0, colors = [], in
 
     # Image descriptor
     flags = 0x00
-    if color_table_size > 0:
+    if len (colors) > 0:
         flags |= 0x80
         flags |= color_table_size - 1
     if interlace:
@@ -48,7 +48,7 @@ def make_image (width, height, depth, values, left = 0, top = 0, colors = [], in
 def get_depth (colors):
     n_colors = len (colors)
     if n_colors == 0:
-        return 0
+        return 1
     else:
         return max (math.ceil (math.log2 (n_colors)), 1)
 
@@ -154,8 +154,6 @@ def make_gif (name, result, width, height, colors, blocks, background_color = 0)
 
     has_color_table = len (colors) > 0
     depth = get_depth (colors)
-    if depth == 0:
-        depth = 1 # FIXME: HACK
     assert (1 <= depth <= 8)
 
     writer.write_header ()
