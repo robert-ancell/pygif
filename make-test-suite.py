@@ -292,27 +292,27 @@ writer.write_image (2, 2, 3, [ RED, GREEN, BLUE, WHITE ])
 writer.write_trailer ()
 
 # Loops
-writer = make_gif ('loop-infinite', 'white-dot', 1, 1, palette8)
+writer = make_gif ('loop-infinite', 'white-dot', 1, 1, palette8, expect_loop = True)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-once', 'white-dot', 1, 1, palette8)
+writer = make_gif ('loop-once', 'white-dot', 1, 1, palette8, expect_loop = True)
 writer.write_netscape_extension (loop_count = 1)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-max', 'white-dot', 1, 1, palette8)
+writer = make_gif ('loop-max', 'white-dot', 1, 1, palette8, expect_loop = True)
 writer.write_netscape_extension (loop_count = 65535)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-buffer', 'white-dot', 1, 1, palette8)
+writer = make_gif ('loop-buffer', 'white-dot', 1, 1, palette8, expect_loop = True)
 writer.write_netscape_extension (loop_count = 0, buffer_size = 1024)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-buffer_max', 'white-dot', 1, 1, palette8)
+writer = make_gif ('loop-buffer_max', 'white-dot', 1, 1, palette8, expect_loop = True)
 writer.write_netscape_extension (loop_count = 0, buffer_size = 4294967295)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-animexts', 'white-dot', 1, 1, palette8)
+writer = make_gif ('loop-animexts', 'white-dot', 1, 1, palette8, expect_loop = True)
 writer.write_animexts_extension (loop_count = 0, buffer_size = 1024)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
@@ -322,7 +322,7 @@ writer.write_trailer ()
 # FIXME: NETSCAPE with multiple loop fields
 
 # Animated image
-writer = make_gif ('animation', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2)
+writer = make_gif ('animation', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2, expect_loop = True)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (delay_time = 50)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
@@ -335,7 +335,7 @@ writer.write_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK])
 writer.write_trailer ()
 
 # Animation with variable frame speed
-writer = make_gif ('animation-speed', [('animation.0', 25), ('animation.1', 50), ('animation.2', 100), ('animation.3', 200)], 2, 2, palette2)
+writer = make_gif ('animation-speed', [('animation.0', 25), ('animation.1', 50), ('animation.2', 100), ('animation.3', 200)], 2, 2, palette2, expect_loop = True)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (delay_time = 25)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
@@ -349,7 +349,7 @@ writer.write_trailer ()
 
 # Animated image with subimages
 # NOTE: RESTORE_BG appears to be interpreted as transparency
-writer = make_gif ('animation-subimage', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2)
+writer = make_gif ('animation-subimage', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2, expect_loop = True)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (gif.DisposalMethod.RESTORE_BACKGROUND, delay_time = 50)
 writer.write_image (1, 1, 1, [ WHITE ], 0, 0)
@@ -362,7 +362,7 @@ writer.write_image (1, 1, 1, [ WHITE ], 0, 1)
 writer.write_trailer ()
 
 # Background with animated subimages that add together
-writer = make_gif ('animation-subimage-add', 'animation-fill', 2, 2, palette2)
+writer = make_gif ('animation-subimage-add', 'animation-fill', 2, 2, palette2, expect_loop = True)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
@@ -375,7 +375,7 @@ writer.write_image (1, 1, 1, [ WHITE ], 0, 1)
 writer.write_trailer ()
 
 # Background with animated subimages that move over initial background
-writer = make_gif ('animation-subimage-move', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2)
+writer = make_gif ('animation-subimage-move', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2, expect_loop = True)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_image (2, 2, 1, [ BLACK, BLACK, BLACK, BLACK ])
 writer.write_graphic_control_extension (gif.DisposalMethod.RESTORE_PREVIOUS, delay_time = 50)
@@ -392,7 +392,7 @@ writer.write_trailer ()
 
 # Animation with multiple images per frame
 # NOTE: Everyone seems to be doing this wrong...
-writer = make_gif ('animation-multi-image', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 1, palette4)
+writer = make_gif ('animation-multi-image', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 1, palette4, expect_loop = True)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_image (2, 1, 2, [ BLACK, RED ])
 writer.write_graphic_control_extension (delay_time = 50)
