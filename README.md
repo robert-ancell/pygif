@@ -39,3 +39,10 @@ if reader.has_screen_descriptor ():
 else:
     print ('Not a valid GIF file')
 ```
+
+Giving the following output:
+```
+Size: 8x8
+Colors: [(0, 0, 0), (255, 255, 255)]
+Pixels: [1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1]
+```
