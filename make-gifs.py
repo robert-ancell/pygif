@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import gif
+import io
 import itertools
 import math
 import struct
@@ -55,7 +57,11 @@ def make_image (width, height, depth, values, left = 0, top = 0, colors = [], in
         # Spec says code size is minimum three
         if start_code_size < 3:
             start_code_size = 3
-    data += make_lzw_data (values, start_code_size, start_with_clear = start_with_clear, end_with_eoi = end_with_eoi, max_width = max_width, clear_on_max_width = clear_on_max_width, extra_data = extra_data)
+    buffer = io.BytesIO ()
+    encoder = gif.LZWEncoder (buffer, start_code_size, max_width, start_with_clear, clear_on_max_width)
+    encoder.feed (values)
+    encoder.finish (end_with_eoi, extra_data)
+    data += buffer.getvalue ()
 
     return data
 
@@ -155,70 +161,6 @@ def make_animexts_extension (loop_count = -1, buffer_size = -1):
     if buffer_size >= 0:
         blocks.append (struct.pack ('<BI', 2, buffer_size))
     return make_application_extension ('ANIMEXTS', '1.0', blocks)
-
-def bits_required (value):
-    if value == 0:
-        return 1
-    else:
-        return math.ceil (math.log2 (value + 1))
-
-def make_code_table (code_size):
-    codes = {}
-    for i in range (2 ** (code_size - 1)):
-        codes[(i,)] = i
-    clear_code = 2 ** (code_size - 1)
-    eoi_code = clear_code + 1
-    next_code = clear_code + 2
-    return (codes, clear_code, eoi_code, next_code)
-
-def lzw_compress (values, start_code_size, start_with_clear = True, end_with_eoi = True, max_width = 12, clear_on_max_width = True):
-    assert (start_code_size <= max_width)
-    assert (3 <= max_width <= 12)
-
-    code_size = start_code_size
-    (codes, clear_code, eoi_code, next_code) = make_code_table (code_size)
-
-    code = tuple ()
-    stream = []
-    if start_with_clear:
-        stream.append ((clear_code, code_size))
-    for value in values:
-        code += (value,)
-        if code in codes:
-            continue
-
-        # If there are available bits, then add a new code
-        if next_code < 2 ** max_width:
-            new_code = next_code
-            next_code += 1
-            codes[code] = new_code
-
-        stream.append ((codes[code[:-1]], code_size))
-        code = code[-1:]
-
-        # Use enough bits to place the next code
-        if next_code == 2 ** code_size + 1:
-            code_size += 1
-
-        # Clear when out of codes
-        if next_code == 2 ** max_width and clear_on_max_width:
-            stream.append ((clear_code, code_size))
-            code_size = start_code_size
-            (codes, clear_code, eoi_code, next_code) = make_code_table (code_size)
-    stream.append ((codes[code], code_size))
-    if end_with_eoi:
-        stream.append ((eoi_code, code_size))
-    return stream
-
-import gif
-import io
-
-def make_lzw_data (values, start_code_size, start_with_clear = True, end_with_eoi = True, max_width = 12, clear_on_max_width = True, extra_data = b''):
-    buffer = io.BytesIO ()
-    encoder = gif.LZWEncoder (buffer, start_code_size, max_width, start_with_clear, clear_on_max_width)
-    encoder.feed (values)
-    encoder.finish (end_with_eoi, extra_data)
-    return buffer.getvalue ()
 
 def make_trailer ():
     return b'\x3b'
