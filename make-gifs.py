@@ -489,3 +489,7 @@ make_gif ('nul-application-extension', 'white-dot', 1, 1, palette8,
             make_image (1, 1, 3, [ WHITE ]) ])
 
 # FIXME: Multiple clears in a row
+
+# FIXME: XMP data
+
+# FIXME: ICC profile
