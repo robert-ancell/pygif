@@ -36,7 +36,7 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
             config[id] = { 'image': '%s.png' % image }
             if delay > 0:
                 config[id]['delay'] = '%d' % delay
-        config['config']['frames'] = ';'.join (frames)
+        config['config']['frames'] = ','.join (frames)
     else:
         config['config']['frames'] = 'frame0'
         config['frame0'] = { 'image': '%s.png' % result }
