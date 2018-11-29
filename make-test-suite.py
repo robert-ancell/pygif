@@ -40,7 +40,9 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
     else:
         config['config']['frames'] = 'frame0'
         config['frame0'] = { 'image': '%s.png' % result }
-    config.write (open ('test-suite/%s.conf' % name, 'w'))
+    file = open ('test-suite/%s.conf' % name, 'w')
+    file.write ('# Automatically generated, do not edit!\n')
+    config.write (file)
 
     # Write test GIF
     filename = 'test-suite/%s.gif' % name
