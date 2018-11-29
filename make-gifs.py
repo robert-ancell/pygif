@@ -6,37 +6,30 @@ import itertools
 import math
 import struct
 
-def make_image (width, height, depth, values, left = 0, top = 0, colors = [], interlace = False, colors_sorted = False, reserved = 0, start_code_size = -1, start_with_clear = True, end_with_eoi = True, max_width = 12, clear_on_max_width = True, extra_data = b''):
+def make_image (width, height, depth, values, left = 0, top = 0, colors = [], interlace = False, start_code_size = -1, start_with_clear = True, end_with_eoi = True, max_width = 12, clear_on_max_width = True, extra_data = b''):
     assert (0 <= width <= 65535)
     assert (0 <= height <= 65535)
     assert (0 <= left <= 65535)
     assert (0 <= top <= 65535)
-    assert (0 <= reserved <= 3)
 
+    has_color_table = len (colors) > 0
     color_table_size = get_depth (colors)
     assert (color_table_size <= 8)
 
-    # Image descriptor
-    flags = 0x00
-    if len (colors) > 0:
-        flags |= 0x80
-        flags |= color_table_size - 1
-    if interlace:
-        flags |= 0x40
-    if colors_sorted:
-        flags |= 0x20
-    flags |= reserved << 3
-    data = struct.pack ('<BHHHHB', 0x2C, left, top, width, height, flags)
+    buffer = io.BytesIO ()
+    writer = gif.Writer (buffer)
+    writer.write_image_descriptor (left, top, width, height, has_color_table = has_color_table, depth = color_table_size, interlace = interlace)
+    if has_color_table:
+        for color in colors:
+            (red, green, blue) = parse_color (color)
+            writer.write_color (red, green, blue)
+        for i in range (len (colors), 2 ** color_table_size):
+            writer.write_color (0, 0, 0)
+    data = buffer.getvalue ()
 
-    # Add optional color table
-    data += make_color_table (colors)
-
-    # Compress pixel values using LZW
+    # Use a default code size big enough to fit all pixel values (min 3 according to spec)
     if start_code_size == -1:
-        start_code_size = depth + 1
-        # Spec says code size is minimum three
-        if start_code_size < 3:
-            start_code_size = 3
+        start_code_size = max (depth + 1, 3)
     buffer = io.BytesIO ()
     encoder = gif.LZWEncoder (buffer, start_code_size, max_width, start_with_clear, clear_on_max_width)
     encoder.feed (values)
@@ -56,18 +49,6 @@ def parse_color (color):
     assert (len (color) == 7)
     assert (color[0] == '#')
     return (int (color[1:3], 16), int (color[3:5], 16), int (color[5:7], 16))
-
-def make_color_table (colors):
-    if len (colors) == 0:
-        return b''
-
-    data = b''
-    for color in colors:
-        (red, green, blue) = parse_color (color)
-        data += struct.pack ('BBB', red, green, blue)
-    for i in range (len (colors) - 1, get_depth (colors)):
-        data += struct.pack ('BBB', 0, 0, 0)
-    return data
 
 def make_extension (label, blocks):
     data = struct.pack ('BB', 0x21, label)
