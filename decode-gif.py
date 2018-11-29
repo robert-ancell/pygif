@@ -45,6 +45,7 @@ def get_disposal_method_string (disposal_method):
     else:
         return str (disposal_method)
 
+print ('Version: %s' % r.version)
 print ('Size: %dx%d pixels' % (r.width, r.height))
 print ('Original Depth: %d bits' % r.original_depth)
 if r.pixel_aspect_ratio != 0:

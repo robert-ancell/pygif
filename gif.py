@@ -17,10 +17,15 @@ __all__      = [ 'AnimationExtension',
                  'Reader',
                  'Trailer',
                  'UnknownBlock',
+                 'Version'
                  'Writer',
                  'XMPDataExtension' ]
 
 import struct
+
+class Version:
+    GIF87a             = b'GIF87a'
+    GIF89a             = b'GIF89a'
 
 class DisposalMethod:
     NONE               = 0
@@ -199,6 +204,7 @@ class Reader:
 
     def __init__ (self,):
         self.buffer = b''
+        self.version = b''
         self.width = 0
         self.height = 0
         self.original_depth = 0
@@ -211,6 +217,9 @@ class Reader:
     def feed (self, data):
         old_len = len (self.buffer)
         self.buffer += data
+
+        if old_len < 6 and len (self.buffer) >= 6:
+            self.version = self.buffer[:6]
 
         # Read logical screen descriptor
         if old_len < 13 and len (self.buffer) >= 13:
@@ -344,7 +353,7 @@ class Reader:
         return len (self.buffer) >= 6
 
     def is_gif (self):
-        return self.buffer[:6] in [ b'GIF87a', b'GIF89a' ]
+        return self.version in [ Version.GIF87a, Version.GIF89a ]
 
     def has_screen_descriptor (self):
         return len (self.buffer) >= 13
@@ -463,8 +472,8 @@ class Writer:
     def __init__ (self, file):
         self.file = file
 
-    def write_header (self):
-        self.file.write (b'GIF89a') # FIXME: Support 87a version
+    def write_header (self, version = Version.GIF89a):
+        self.file.write (version)
 
     def write_screen_descriptor (self, width, height, has_color_table = False, colors_sorted = False, depth = 1, original_depth = 8, background_color = 0, pixel_aspect_ratio = 0):
         assert (0 <= width <= 65535)

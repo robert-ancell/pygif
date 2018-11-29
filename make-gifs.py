@@ -5,12 +5,12 @@ import itertools
 import math
 
 test_count = 0
-def make_gif (name, result, width, height, colors = [], background_color = 0):
+def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a):
     global test_count
 
     filename = 'test-images/%03d_%s_%s.gif' % (test_count, name, result)
     writer = gif.Writer (open (filename, 'wb'))
-    writer.write_header ()
+    writer.write_header (version)
     if len (colors) > 0:
         depth = math.ceil (math.log2 (len (colors)))
         writer.write_screen_descriptor (width, height, has_color_table = True, depth = depth, background_color = background_color)
@@ -426,3 +426,10 @@ writer.write_trailer ()
 # FIXME: XMP data
 
 # FIXME: ICC profile
+
+# Support older version
+writer = make_gif ('gif87a', 'white-dot', 1, 1, palette2, version = gif.Version.GIF87a)
+writer.write_image (1, 1, 2, [ WHITE ])
+writer.write_trailer ()
+
+# FIXME: Check 89a features don't work in 87a
