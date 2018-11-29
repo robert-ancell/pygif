@@ -583,7 +583,6 @@ class Writer:
         self.file.write (bytes (metadata, 'utf-8'))
         self.file.write (b'\x01')
         for i in range (256):
-            print (0xff - i)
             self.file.write (struct.pack ('B', 0xff - i))
         self.file.write (b'\x00')
 
