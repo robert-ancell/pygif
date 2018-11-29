@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-__all__ = [ 'Reader', 'Writer' ]
+__version__  = '0.1'
+__all__      = [ 'Reader', 'Writer' ]
 
 import struct
 
