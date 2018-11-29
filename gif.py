@@ -45,7 +45,7 @@ class Image (Block):
 
     def get_lzw_data (self):
         offset = self.offset + 10 + len (self.color_table) * 3 + 1
-        (subblock_offsets, _) = get_subblocks (self.reader.buffer, offset)
+        (subblock_offsets, _) = _get_subblocks (self.reader.buffer, offset)
         data = b''
         for (offset, length) in subblock_offsets:
             data += self.reader.buffer[offset: offset + length]
@@ -53,7 +53,7 @@ class Image (Block):
 
     def decode_lzw (self):
         offset = self.offset + 10 + len (self.color_table) * 3 + 1
-        (subblock_offsets, _) = get_subblocks (self.reader.buffer, offset)
+        (subblock_offsets, _) = _get_subblocks (self.reader.buffer, offset)
         decoder = LZWDecoder (self.lzw_min_code_size)
         for (offset, length) in subblock_offsets:
             decoder.feed (self.reader.buffer, offset, length)
@@ -68,7 +68,7 @@ class Extension (Block):
         self.label = label
 
     def get_subblocks (self):
-        (subblock_offsets, _) = get_subblocks (self.reader.buffer, self.offset + 2)
+        (subblock_offsets, _) = _get_subblocks (self.reader.buffer, self.offset + 2)
         if subblock_offsets is None:
             return []
         subblocks = []
@@ -122,7 +122,7 @@ class ApplicationExtension (Extension):
     def get_data (self):
         return self.get_subblocks ()[1:]
 
-def decode_animation_subblocks (block):
+def _decode_animation_subblocks (block):
     loop_count = None
     buffer_size = None
     unused_subblocks = []
@@ -139,12 +139,12 @@ def decode_animation_subblocks (block):
 class NetscapeExtension (ApplicationExtension):
     def __init__ (self, reader, offset, length):
         ApplicationExtension.__init__ (self, reader, offset, length, 'NETSCAPE', '2.0')
-        (self.loop_count, self.buffer_size, self.unused_subblocks) = decode_animation_subblocks (self)
+        (self.loop_count, self.buffer_size, self.unused_subblocks) = _decode_animation_subblocks (self)
 
 class AnimationExtension (ApplicationExtension):
     def __init__ (self, reader, offset, length):
         ApplicationExtension.__init__ (self, reader, offset, length, 'ANIMEXTS', '1.0')
-        (self.loop_count, self.buffer_size, self.unused_subblocks) = decode_animation_subblocks (self)
+        (self.loop_count, self.buffer_size, self.unused_subblocks) = _decode_animation_subblocks (self)
 
 class XMPDataExtension (ApplicationExtension):
     def __init__ (self, reader, offset, length):
@@ -251,7 +251,7 @@ class Reader:
                     return
                 lzw_min_code_size = self.buffer[block_start + block_length]
                 block_length += 1
-                (subblock_offsets, subblocks_length) = get_subblocks (self.buffer, block_start + block_length)
+                (subblock_offsets, subblocks_length) = _get_subblocks (self.buffer, block_start + block_length)
                 if subblock_offsets is None:
                     return
                 block_length += subblocks_length
@@ -275,7 +275,7 @@ class Reader:
                 label = self.buffer[block_start + 1]
 
                 # Check enough space for blocks
-                (subblock_offsets, subblocks_length) = get_subblocks (self.buffer, block_start + block_length)
+                (subblock_offsets, subblocks_length) = _get_subblocks (self.buffer, block_start + block_length)
                 if subblock_offsets is None:
                     return
                 block_length += subblocks_length
@@ -338,7 +338,7 @@ class Reader:
     def has_unknown_block (self):
         return len (self.blocks) > 0 and isinstance (self.blocks[-1], UnknownBlock)
 
-def get_subblocks (data, offset):
+def _get_subblocks (data, offset):
     n_required = 0
     n_available = len (data) - offset
     subblocks = []
@@ -442,14 +442,6 @@ class LZWDecoder:
     def is_complete (self):
         return len (self.codes) > 0 and self.codes[-1] == self.eoi_code
 
-def get_depth (colors):
-    from math import ceil, log2
-    n_colors = len (colors)
-    if n_colors == 0:
-        return 1
-    else:
-        return max (ceil (log2 (n_colors)), 1)
-
 class Writer:
     def __init__ (self, file):
         self.file = file
@@ -457,7 +449,11 @@ class Writer:
     # FIXME: Give a proper name?
     def write_headers (self, width, height, colors = [], original_depth = 8, background_color = 0, pixel_aspect_ratio = 0):
         has_color_table = len (colors) > 0
-        depth = get_depth (colors)
+        if has_color_table:
+            from math import ceil, log2
+            depth = max (ceil (log2 (len (colors))), 1)
+        else:
+            depth = 1
         assert (1 <= depth <= 8)
 
         self.write_header ()
