@@ -1,10 +1,8 @@
 #!/usr/bin/python3
 
 import gif
-import io
 import itertools
 import math
-import struct
 
 test_count = 0
 def make_gif (name, result, width, height, colors = [], background_color = 0):
