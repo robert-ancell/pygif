@@ -96,21 +96,23 @@ class CommentExtension (Extension):
         return data.decode (encoding)
 
 class ApplicationExtension (Extension):
-    def __init__ (self, reader, offset, length):
+    def __init__ (self, reader, offset, length, identifier, authentication_code):
         Extension.__init__ (self, reader, offset, length, 0xff)
-        subblocks = self.get_subblocks ()
-        if len (subblocks) > 0 and len (subblocks[0]) == 11:
-            self.identifier = subblocks[0][:8].decode ('ascii')
-            self.authentication_code = subblocks[0][8:11].decode ('ascii')
-        else:
-            self.identifier = ''
-            self.authentication_code = ''
-
-    def is_valid (self):
-        return self.identifier != ''
+        self.identifier = identifier
+        self.authentication_code = authentication_code
 
     def get_data (self):
         return self.get_subblocks ()[1:]
+
+class XMPDataExtension (ApplicationExtension):
+    def __init__ (self, reader, offset, length):
+        ApplicationExtension.__init__ (self, reader, offset, length, 'XMP Data', 'XMP')
+
+    def get_metadata (self):
+        # This extension uses a clever hack to put raw XML in the file - it uses
+        # a magic suffix that turns the XML text into valid GIF blocks.
+        # We just need the raw blocks without the suffix
+        return self.reader.buffer[self.offset + 14: self.offset + self.length - 258]
 
 class Trailer (Block):
     def __init__ (self, reader, offset, length):
@@ -243,8 +245,13 @@ class Reader:
                     block = GraphicControlExtension (self, block_start, block_length, disposal_method, delay_time, user_input, has_transparent, transparent_color)
                 elif label == 0xfe:
                     block = CommentExtension (self, block_start, block_length)
-                elif label == 0xff:
-                    block = ApplicationExtension (self, block_start, block_length)
+                elif label == 0xff and len (first_subblock) == 11:
+                    identifier = first_subblock[:8].decode ('ascii')
+                    authentication_code = first_subblock[8:11].decode ('ascii')
+                    if identifier == 'XMP Data' and authentication_code == 'XMP':
+                        block = XMPDataExtension (self, block_start, block_length)
+                    else:
+                        block = ApplicationExtension (self, block_start, block_length, identifier, authentication_code)
                 else:
                     block = Extension (self, block_start, block_length, label)
                 self.blocks.append (block)
