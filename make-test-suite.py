@@ -188,6 +188,27 @@ writer.write_image (1, 1, 3, [ RED ])
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 
+# Image with >256 colors by using local color tables
+writer = make_gif ('high-color', 'high-color', 32, 32)
+pixels = list (range (256))
+colors0 = []
+colors1 = []
+colors2 = []
+colors3 = []
+for y in range (16):
+    for x in range (16):
+        def get_color (x, y):
+            return (math.floor (x * 256 / 32), math.floor (y * 256 / 32), 0)
+        colors0.append (get_color (x, y))
+        colors1.append (get_color (x + 16, y))
+        colors2.append (get_color (x, y + 16))
+        colors3.append (get_color (x + 16, y + 16))
+writer.write_image (16, 16, 8, pixels, left = 0, top = 0, colors = colors0)
+writer.write_image (16, 16, 8, pixels, left = 16, top = 0, colors = colors1)
+writer.write_image (16, 16, 8, pixels, left = 0, top = 16, colors = colors2)
+writer.write_image (16, 16, 8, pixels, left = 16, top = 16, colors = colors3)
+writer.write_trailer ()
+
 # Image with additional pixels
 writer = make_gif ('additional-data', 'white-dot', 1, 1, palette8)
 writer.write_image (10, 10, 3, filled_pixels (10, 10, WHITE))
