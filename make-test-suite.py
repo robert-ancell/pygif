@@ -5,7 +5,7 @@ import gif
 import itertools
 import math
 
-def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, buffer_size = 0):
+def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, buffer_size = 0, comment = ''):
     # Add to list of tests
     test_list = open ('test-suite/TESTS').readlines ()
     line = name + '\n'
@@ -26,6 +26,7 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
     else:
         config['config']['loop-count'] = '%d' % loop_count
     config['config']['buffer-size'] = '%d' % buffer_size
+    config['config']['comment'] = repr (comment)
     if isinstance (result, list):
         frames = []
         for (i, (image, delay)) in enumerate (result):
@@ -411,24 +412,29 @@ writer.write_trailer ()
 # FIXME: Animation without fixed first frame (everyone seems to be assuming transparent background)
 
 # Comments
-writer = make_gif ('comment', 'white-dot', 1, 1, palette8)
-writer.write_comment_extension ('Hello World!')
+comment = 'Hello World!'
+writer = make_gif ('comment', 'white-dot', 1, 1, palette8, comment = comment)
+writer.write_comment_extension (comment)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('large-comment', 'white-dot', 1, 1, palette8)
-writer.write_comment_extension (' '.join (['Hello World!'] * 1000))
+comment = ' '.join (['Hello World!'] * 1000)
+writer = make_gif ('large-comment', 'white-dot', 1, 1, palette8, comment = comment)
+writer.write_comment_extension (comment)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('nul-comment', 'white-dot', 1, 1, palette8)
-writer.write_comment_extension ('\0')
+comment = '\0'
+writer = make_gif ('nul-comment', 'white-dot', 1, 1, palette8, comment = comment)
+writer.write_comment_extension (comment)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('invalid-ascii-comment', 'white-dot', 1, 1, palette8)
-writer.write_comment_extension ('\xff')
+comment = '\xff'
+writer = make_gif ('invalid-ascii-comment', 'white-dot', 1, 1, palette8, comment = comment)
+writer.write_comment_extension (comment)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('invalid-utf8-comment', 'white-dot', 1, 1, palette8)
-writer.write_comment_extension ('\xc3\x28')
+comment = '\xc3\x28'
+writer = make_gif ('invalid-utf8-comment', 'white-dot', 1, 1, palette8, comment = comment)
+writer.write_comment_extension (comment)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 
