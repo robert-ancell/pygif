@@ -27,9 +27,9 @@ def make_image (width, height, depth, values, left = 0, top = 0, colors = [], in
             writer.write_color (0, 0, 0)
     data = buffer.getvalue ()
 
-    # Use a default code size big enough to fit all pixel values (min 3 according to spec)
+    # Use a default code size big enough to fit all pixel values (min 2 according to spec)
     if start_code_size == -1:
-        start_code_size = max (depth + 1, 3)
+        start_code_size = depth
     buffer = io.BytesIO ()
     encoder = gif.LZWEncoder (buffer, start_code_size, max_width, start_with_clear, clear_on_max_width)
     encoder.feed (values)
@@ -49,6 +49,12 @@ def parse_color (color):
     assert (len (color) == 7)
     assert (color[0] == '#')
     return (int (color[1:3], 16), int (color[3:5], 16), int (color[5:7], 16))
+
+def parse_colors (colors):
+    result = []
+    for color in colors:
+        result.append (parse_color (color))
+    return result
 
 def make_extension (label, blocks):
     data = struct.pack ('BB', 0x21, label)
@@ -150,6 +156,17 @@ def make_gif (name, result, width, height, colors, blocks, background_color = 0)
     writer.write_trailer ()
     test_count += 1
 
+def make_gif2 (name, result, width, height, colors, background_color = 0):
+    global test_count
+
+    filename = 'test-images/%03d_%s_%s.gif' % (test_count, name, result)
+    writer = gif.Writer (open (filename, 'wb'))
+    writer.write_headers (width, height, colors, background_color = background_color)
+
+    test_count += 1
+
+    return writer
+
 BLACK        = 0
 WHITE        = 1
 RED          = 2
@@ -179,29 +196,18 @@ def make_grayscale_palette (depth):
     colors = []
     for i in range (n_colors):
         v = (i * 255 // (n_colors - 1))
-        colors.append ('#%02x%02x%02x' % (v, v, v))
+        colors.append ((v, v, v))
     return colors
-grays1 = make_grayscale_palette (1)
-grays2 = make_grayscale_palette (2)
-grays3 = make_grayscale_palette (3)
-grays4 = make_grayscale_palette (4)
-grays5 = make_grayscale_palette (5)
-grays6 = make_grayscale_palette (6)
-grays7 = make_grayscale_palette (7)
-grays8 = make_grayscale_palette (8)
 
 def filled_image (width, height, depth, color):
     return make_image (width, height, depth, [color] * (width * height))
 
-# All possible color depths
-make_gif ('depth1', 'white-dot', 1, 1, grays1, [ make_image (1, 1, 1, [ 1 ]) ])
-make_gif ('depth2', 'white-dot', 1, 1, grays2, [ make_image (1, 1, 2, [ 3 ]) ])
-make_gif ('depth3', 'white-dot', 1, 1, grays3, [ make_image (1, 1, 3, [ 7 ]) ])
-make_gif ('depth4', 'white-dot', 1, 1, grays4, [ make_image (1, 1, 4, [ 15 ]) ])
-make_gif ('depth5', 'white-dot', 1, 1, grays5, [ make_image (1, 1, 5, [ 31 ]) ])
-make_gif ('depth6', 'white-dot', 1, 1, grays6, [ make_image (1, 1, 6, [ 63 ]) ])
-make_gif ('depth7', 'white-dot', 1, 1, grays7, [ make_image (1, 1, 7, [ 127 ]) ])
-make_gif ('depth8', 'white-dot', 1, 1, grays8, [ make_image (1, 1, 8, [ 255 ]) ])
+# Single pixel, all possible color depths
+for depth in range (1, 9):
+    palette = make_grayscale_palette (depth)
+    writer = make_gif2 ('depth%d' % depth, 'white-dot', 1, 1, palette)
+    writer.write_image (1, 1, depth, [ 2 ** depth - 1 ])
+    writer.write_trailer ()
 
 # Image with different colours in each pixel
 make_gif ('four-colors', 'four-colors', 2, 2, palette8, [make_image (2, 2, 8, [RED, GREEN, BLUE, WHITE])])
@@ -221,36 +227,36 @@ make_gif ('invalid-background', 'white-dot', 1, 1, palette2,
           background_color = 255)
 
 # Test all color bits work
-values = []
+pixels = []
 colors = []
 for i in range (256):
-    values.append (i)
+    pixels.append (i)
     colors.append ('#%02x0000' % i)
-make_gif ('all-reds', 'all-reds', 16, 16, colors, [make_image (16, 16, 8, values)])
-values = []
+make_gif ('all-reds', 'all-reds', 16, 16, colors, [make_image (16, 16, 8, pixels)])
+pixels = []
 colors = []
 for i in range (256):
-    values.append (i)
+    pixels.append (i)
     colors.append ('#00%02x00' % i)
-make_gif ('all-greens', 'all-greens', 16, 16, colors, [make_image (16, 16, 8, values)])
-values = []
+make_gif ('all-greens', 'all-greens', 16, 16, colors, [make_image (16, 16, 8, pixels)])
+pixels = []
 colors = []
 for i in range (256):
-    values.append (i)
+    pixels.append (i)
     colors.append ('#0000%02x' % i)
-make_gif ('all-blues', 'all-blues', 16, 16, colors, [make_image (16, 16, 8, values)])
+make_gif ('all-blues', 'all-blues', 16, 16, colors, [make_image (16, 16, 8, pixels)])
 
 # Interlaced image
 colors = []
 for i in range (256):
     colors.append ('#%02x0000' % i)
-values = []
+pixels = []
 def interlace_rows (height):
     return itertools.chain (range (0, 16, 8), range (4, 16, 8), range (2, 16, 4), range (1, 16, 2))
 for row in interlace_rows (16):
     for col in range (16):
-        values.append (row * 16 + col)
-make_gif ('interlace', 'all-reds', 16, 16, colors, [make_image (16, 16, 8, values, interlace = True)])
+        pixels.append (row * 16 + col)
+make_gif ('interlace', 'all-reds', 16, 16, colors, [make_image (16, 16, 8, pixels, interlace = True)])
 
 # Images that don't fully cover the background
 make_gif ('image-inside-bg', 'image-indside-bg', 3, 3, palette8, [make_image (1, 1, 3, [RED], left = 1, top = 1)], background_color = WHITE)
@@ -268,7 +274,7 @@ make_gif ('images-combine', 'four-colors', 2, 2, palette8,
 make_gif ('images-overlap', 'white-dot', 1, 1, palette8, [make_image (1, 1, 3, [RED]),
                                                           make_image (1, 1, 3, [WHITE])])
 
-# Image with additional values
+# Image with additional pixels
 make_gif ('additional-data', 'white-dot', 1, 1, palette8, [ filled_image (10, 10, 3, WHITE) ])
 #make_gif ('additional-data-after-eoi', 'white-dot', 1, 1, [ filled_image (10, 10, 3, WHITE) ], palette8)
 
@@ -307,8 +313,8 @@ make_gif ('4095-codes', '4095-codes', random_width, random_height, palette16, [m
 make_gif ('255-codes', '4095-codes', random_width, random_height, palette16, [make_image (random_width, random_height, 4, values, max_width = 8)])
 
 # Use a minimum code size
-make_gif ('large-codes', '4095-codes', random_width, random_height, palette16, [make_image (random_width, random_height, 4, values, start_code_size = 8)])
-make_gif ('max-codes', '4095-codes', random_width, random_height, palette16, [make_image (random_width, random_height, 4, values, start_code_size = 12)])
+make_gif ('large-codes', '4095-codes', random_width, random_height, palette16, [make_image (random_width, random_height, 4, values, start_code_size = 7)])
+make_gif ('max-codes', '4095-codes', random_width, random_height, palette16, [make_image (random_width, random_height, 4, values, start_code_size = 11)])
 
 # Transparent image
 make_gif ('transparent', 'four-colors-transparent', 2, 2, palette8,

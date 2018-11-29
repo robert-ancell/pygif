@@ -442,16 +442,28 @@ class LZWDecoder:
     def is_complete (self):
         return len (self.codes) > 0 and self.codes[-1] == self.eoi_code
 
+def get_depth (colors):
+    from math import ceil, log2
+    n_colors = len (colors)
+    if n_colors == 0:
+        return 1
+    else:
+        return max (ceil (log2 (n_colors)), 1)
+
 class Writer:
     def __init__ (self, file):
         self.file = file
 
     # FIXME: Give a proper name?
-    def start (self, width, height, colors = [], original_depth = 8, background_color = 0, pixel_aspect_ratio = 0):
-        self.write_header ()
+    def write_headers (self, width, height, colors = [], original_depth = 8, background_color = 0, pixel_aspect_ratio = 0):
         has_color_table = len (colors) > 0
+        depth = get_depth (colors)
+        assert (1 <= depth <= 8)
+
+        self.write_header ()
         self.write_screen_descriptor (width, height, has_color_table = has_color_table, depth = depth, original_depth = original_depth, background_color = background_color, pixel_aspect_ratio = pixel_aspect_ratio)
-        self.write_color_table (colors) # FIXME: Pad out colors
+        if has_color_table:
+            self.write_color_table (colors, depth)
 
     def write_header (self):
         self.file.write (b'GIF89a') # FIXME: Support 87a version
@@ -474,16 +486,26 @@ class Writer:
     def write_color (self, red, green, blue):
         self.file.write (struct.pack ('BBB', red, green, blue))
 
-    def write_image (self, left, top, width, height, pixels, colors = [], interlace = False, colors_sorted = False, reserved = 0):
-        has_color_table = len (colors) > 0
+    def write_color_table (self, colors, depth):
+        assert (1 <= depth <= 8)
+        assert (len (colors) <= 2 ** depth)
+        for (red, green, blue) in colors:
+            self.write_color (red, green, blue)
+        for i in range (len (colors), 2 ** depth):
+            self.write_color (0, 0, 0)
 
-        self.write_image_descriptor (left, top, width, height, has_color_table = has_color_table, depth = depth, interlace = interlace)
-        if len (colors) > 0:
-            self.write_color_table (colors) # FIXME: Pad out colors
-        encoder = LZWEncoder ()
+    def write_image (self, width, height, depth, pixels, left = 0, top = 0, global_colors = [], colors = [], interlace = False, colors_sorted = False, reserved = 0):
+        has_color_table = len (colors) > 0
+        if has_color_table:
+            color_table_size = depth
+        else:
+            color_table_size = 1
+        self.write_image_descriptor (left, top, width, height, has_color_table = has_color_table, depth = color_table_size, interlace = interlace)
+        if has_color_table:
+            self.write_color_table (colors, depth)
+        encoder = LZWEncoder (self.file, min_code_size = max (depth, 2))
         encoder.feed (pixels)
         encoder.finish ()
-        self.write_image_data (encoder.data)
 
     def write_image_descriptor (self, left, top, width, height, has_color_table = False, depth = 1, interlace = False, colors_sorted = False, reserved = 0):
         assert (0 <= width <= 65535)
@@ -612,9 +634,9 @@ class Writer:
         self.file.write (struct.pack ('B', BlockType.TRAILER))
 
 class LZWEncoder:
-    def __init__ (self, file, min_code_size = 3, max_code_size = 12, start_with_clear = True, clear_on_max_width = True):
+    def __init__ (self, file, min_code_size = 2, max_code_size = 12, start_with_clear = True, clear_on_max_width = True):
         self.file = file
-        self.min_code_size = min_code_size
+        self.min_code_size = max (min_code_size, 2)
         self.max_code_size = max_code_size
         self.clear_on_max_width = clear_on_max_width
 
@@ -624,21 +646,21 @@ class LZWEncoder:
         self.octet_bits = 0
 
         # Code table
-        self.clear_code = 2 ** (min_code_size - 1)
+        self.clear_code = 2 ** self.min_code_size
         self.eoi_code = self.clear_code + 1
         self.code_table = {}
-        for i in range (2 ** (min_code_size - 1)):
+        for i in range (2 ** self.min_code_size):
             self.code_table[(i,)] = i
         self.next_code = self.eoi_code + 1
 
         # Code currently being encoded
         self.code = tuple ()
-        self.code_size = min_code_size
+        self.code_size = self.min_code_size + 1
 
         if start_with_clear:
             self.write_code (self.clear_code)
 
-        self.file.write (struct.pack ('B', min_code_size - 1))
+        self.file.write (struct.pack ('B', self.min_code_size))
 
     def feed (self, values):
         for value in values:
@@ -664,9 +686,9 @@ class LZWEncoder:
             if self.next_code == 2 ** self.max_code_size and self.clear_on_max_width:
                 self.write_code (self.clear_code)
                 self.code_table = {}
-                for i in range (2 ** (self.min_code_size - 1)):
+                for i in range (2 ** self.min_code_size):
                     self.code_table[(i,)] = i
-                self.code_size = self.min_code_size
+                self.code_size = self.min_code_size + 1
                 self.next_code = self.eoi_code + 1
 
     def finish (self, send_eoi = True, extra_data = None):
