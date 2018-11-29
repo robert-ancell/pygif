@@ -21,6 +21,7 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
         else:
             return 'no'
     config['config'] = { 'input': '%s.gif' % name }
+    config['config']['version'] = version.decode ('ascii')
     if loop_count < 0:
         config['config']['loop-count'] = 'infinite'
     else:
