@@ -434,8 +434,7 @@ class LZWEncoder:
         self.max_code_size = max_code_size
         self.clear_on_max_width = clear_on_max_width
 
-        # Codes being output
-        self.codes = []
+        # Data being output
         self.data = b''
         self.octet = 0x00
         self.octet_bits = 0
@@ -493,8 +492,6 @@ class LZWEncoder:
             self.data += struct.pack ('B', self.octet)
 
     def write_code (self, code):
-        self.codes.append (code)
-
         bits_needed = self.code_size
         while bits_needed > 0:
             bits_used = min (bits_needed, 8 - self.octet_bits)
