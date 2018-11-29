@@ -335,7 +335,7 @@ writer.write_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK])
 writer.write_trailer ()
 
 # Animation with variable frame speed
-writer = make_gif ('animation-speed', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2)
+writer = make_gif ('animation-speed', [('animation.0', 25), ('animation.1', 50), ('animation.2', 100), ('animation.3', 200)], 2, 2, palette2)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (delay_time = 25)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
