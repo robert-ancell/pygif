@@ -75,7 +75,7 @@ def compare_to_reference_frame (reader, pixels, filename):
     png_reader = png.Reader (filename)
     (width, height, r_pixels, _) = png_reader.read_flat ()
     if (width, height) != (reader.width, reader.height):
-        print ('  Size mismatch!')
+        print ('  Size mismatch! Got %dx%d, expected %dx%d' % (reader.width, reader.height, width, height))
         return False
     for y in range (height):
         for x in range (width):
