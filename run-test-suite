@@ -22,6 +22,10 @@ def set_pixel (reader, pixels, x, y, color):
     pixels[offset + 2] = blue
     pixels[offset + 3] = alpha
 
+def get_pixel (reader, pixels, x, y):
+    offset = (y * reader.width + x) * 4
+    return (pixels[offset + 0], pixels[offset + 1], pixels[offset + 2], pixels[offset + 3])
+
 def render_block (reader, pixels, block, transparent_color):
     i = 0
     block_pixels = block.get_pixels ()
@@ -48,7 +52,7 @@ def render_block (reader, pixels, block, transparent_color):
                     color = get_color (color_table, index)
                 set_pixel (reader, pixels, x, y, color)
 
-def dispose_block (reader, pixels, block, method):
+def dispose_block (reader, pixels, block, method, previous_pixels):
     if method == gif.DisposalMethod.KEEP:
         pass
     elif method == gif.DisposalMethod.RESTORE_BACKGROUND:
@@ -58,6 +62,11 @@ def dispose_block (reader, pixels, block, method):
                 if 0 <= x < reader.width and 0 <= y < reader.height:
                     set_pixel (reader, pixels, x, y, color)
     elif method == gif.DisposalMethod.RESTORE_PREVIOUS:
+        for y in range (block.top, block.top + block.height):
+            for x in range (block.left, block.left + block.width):
+                if 0 <= x < reader.width and 0 <= y < reader.height:
+                    color = get_pixel (reader, previous_pixels, x, y)
+                    set_pixel (reader, pixels, x, y, color)
         pass # FIXME
 
 def render (reader):
@@ -76,6 +85,7 @@ def render (reader):
     disposal_method = gif.DisposalMethod.NONE
     transparent_color = None
     last_block = None
+    previous_pixels = pixels[:]
     for block in reader.blocks:
         if isinstance (block, gif.GraphicControlExtension):
             disposal_method = block.disposal_method
@@ -84,8 +94,10 @@ def render (reader):
         elif isinstance (block, gif.Image):
             if last_block is not None:
                 (m, b) = last_block
-                dispose_block (reader, pixels, b, m)
+                dispose_block (reader, pixels, b, m, previous_pixels)
             render_block (reader, pixels, block, transparent_color)
+            if disposal_method != gif.DisposalMethod.RESTORE_PREVIOUS:
+                previous_pixels = pixels[:]
             last_block = (disposal_method, block)
             disposal_method = gif.DisposalMethod.NONE
             transparent_color = None
@@ -100,9 +112,8 @@ def compare_to_reference_frame (reader, pixels, filename):
         return False
     for y in range (height):
         for x in range (width):
-            offset = (y * reader.width + x) * 4
-            color = (pixels[offset + 0], pixels[offset + 1], pixels[offset + 2], pixels[offset + 3])
-            r_color = (r_pixels[offset + 0], r_pixels[offset + 1], r_pixels[offset + 2], r_pixels[offset + 3])
+            color = get_pixel (reader, pixels, x, y)
+            r_color = get_pixel (reader, r_pixels, x, y)
             if color[3] == r_color[3] == 0:
                 pass
             elif color != r_color:
