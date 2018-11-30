@@ -1,5 +1,10 @@
 This repository contains a Python encoder and decoder for the [GIF file format](https://www.w3.org/Graphics/GIF/spec-gif89a.txt).
 
+The easiest way to get PyGIF is to install using pip:
+```
+pip install pygif
+```
+
 The following will generate an 8x8 checkerboard image:
 ```python
 import gif
