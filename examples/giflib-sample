@@ -5,7 +5,7 @@ import gif
 writer = gif.Writer (open ('sample_1.gif', 'wb'))
 
 # Regenerate the sample image from http://giflib.sourceforge.net/whatsinagif/
-colors = [ (0xff, 0xff, 0xff), (0xff, 0x00, 0x00), (0x00, 0x00, 0xff), (0x00, 0x00, 0x00) ]
+colors = [ (255, 255, 255), (255, 0, 0), (0, 0, 255), (0, 0, 0) ]
 depth = 2
 pixels = [ 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
            1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
