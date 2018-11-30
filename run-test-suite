@@ -4,6 +4,7 @@ import array
 import configparser
 import gif
 import png
+import sys
 
 def get_color (color_table, index):
     if index < len (color_table):
@@ -52,8 +53,6 @@ def render (reader):
     for block in reader.blocks:
         if isinstance (block, gif.Image):
             render_block (reader, pixels, block)
-            # FIXME: Check
-            print ('  Frame')
             dispose_block (reader, pixels, block)
 
     return (reader.width, reader.height, pixels)
@@ -62,37 +61,77 @@ def compare_to_reference_frame (reader, pixels, filename):
     png_reader = png.Reader (filename)
     (width, height, r_pixels, _) = png_reader.read_flat ()
     if (width, height) != (reader.width, reader.height):
-        print ('Size mismatch!')
+        print ('  Size mismatch!')
         return False
     for y in range (height):
         for x in range (width):
-            offset = (y0 * reader.width + x) * 4
+            offset = (y * reader.width + x) * 4
             color = (pixels[offset + 0], pixels[offset + 1], pixels[offset + 2], pixels[offset + 3])
             r_color = (r_pixels[offset + 0], r_pixels[offset + 1], r_pixels[offset + 2], r_pixels[offset + 3])
             if color != r_color:
-                print ('Pixel mismatch at %d,%d!', x, y)
+                print ('  Pixel mismatch at %d,%d! Got %s, expected %s' % (x, y, color, r_color))
                 return False
     return True;
 
-lines = open ('test-suite/TESTS').readlines ()
-for line in lines:
-    name = line.strip ()
-    if name == '':
-        continue
-
+def run_test (name):
     print ('Running %s' % name)
 
     config = configparser.ConfigParser ()
-    config.read ('test-suite/%s.conf' % name)
+    config_filename = 'test-suite/%s.conf' % name
+    config.read (config_filename);
+    if not config.has_section ('config'):
+        print ('  Test config %s does not exist / invalid' % config_filename)
+        return False
 
     c = config['config']
     input_filename = c['input']
-    frames = c['frames'].split (',')
+    frames = []
+    frame_names = c['frames'].split (',')
+    for frame_name in frame_names:
+        frames.append (config[frame_name])
 
+    print ('  Loading image %s' % input_filename)
     reader = gif.Reader ()
     data = open ('test-suite/%s' % input_filename, 'rb').read ()
     reader.feed (data)
 
-    if name != 'max-size':
-        (width, height, pixels) = render (reader)
-    print ('  %s' % input_filename)
+    # Skip test that uses too much memory
+    if name == 'max-size':
+        return True
+
+    (width, height, pixels) = render (reader)
+    reference_filename = 'test-suite/%s' % frames[-1]['image']
+
+    # HACK: Skip tests that don't have reliable output
+    if reference_filename == 'test-suite/nocrash.png':
+        return True
+
+    print ('  Comparing to %s' % reference_filename)
+    return compare_to_reference_frame (reader, pixels, reference_filename)
+
+if len (sys.argv) > 1:
+    tests = sys.argv[1:]
+else:
+    lines = open ('test-suite/TESTS').readlines ()
+    tests = []
+    for line in lines:
+        name = line.strip ()
+        if name != '':
+            tests.append (name)
+
+successes = []
+failures = []
+for name in tests:
+    if run_test (name):
+        print ('  PASS')
+        successes.append (name)
+    else:
+        print ('  FAIL')
+        failures.append (name)
+print ('------------------')
+print ('%d/%d tests passed' % (len (successes), len (successes) + len (failures)))
+if len (failures) > 0:
+    print ('Failures: %s' % ', '.join (failures))
+    print ('FAIL')
+else:
+    print ('PASS')
