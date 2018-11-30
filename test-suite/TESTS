@@ -45,9 +45,10 @@ loop-buffer_max
 loop-animexts
 animation
 animation-speed
-animation-subimage
-animation-subimage-add
-animation-subimage-move
+dispose-none
+dispose-keep
+dispose-restore-background
+dispose-restore-previous
 animation-multi-image
 animation-multi-image-explicit-zero-delay
 comment

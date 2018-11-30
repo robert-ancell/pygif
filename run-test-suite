@@ -75,14 +75,18 @@ def render (reader):
     # Write images onto background
     disposal_method = gif.DisposalMethod.NONE
     transparent_color = None
+    last_block = None
     for block in reader.blocks:
         if isinstance (block, gif.GraphicControlExtension):
             disposal_method = block.disposal_method
             if block.has_transparent:
                 transparent_color = block.transparent_color
         elif isinstance (block, gif.Image):
+            if last_block is not None:
+                (m, b) = last_block
+                dispose_block (reader, pixels, b, m)
             render_block (reader, pixels, block, transparent_color)
-            dispose_block (reader, pixels, block, disposal_method)
+            last_block = (disposal_method, block)
             disposal_method = gif.DisposalMethod.NONE
             transparent_color = None
 
