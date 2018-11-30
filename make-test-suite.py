@@ -212,11 +212,11 @@ writer.write_image (16, 16, 8, pixels, left = 16, top = 16, colors = colors3)
 writer.write_trailer ()
 
 # Image with additional pixels
-writer = make_gif ('additional-data', 'white-dot', 1, 1, palette8)
-writer.write_image (10, 10, 3, filled_pixels (10, 10, WHITE))
+writer = make_gif ('extra-pixels', 'white-dot', 1, 1, palette8)
+writer.write_image (1, 1, 3, filled_pixels (10, 10, WHITE))
 writer.write_trailer ()
 #writer = make_gif ('additional-data-after-eoi', 'white-dot', 1, 1, palette8)
-#writer.write_image (10, 10, 3, filled_pixels (10, 10, WHITE))
+#writer.write_image (1, 1, 3, filled_pixels (10, 10, WHITE))
 #writer.write_trailer ()
 
 # Addtional data after end-of-information
