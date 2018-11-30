@@ -3,6 +3,7 @@
 import array
 import configparser
 import gif
+import itertools
 import png
 import sys
 
@@ -20,7 +21,13 @@ def render_block (reader, pixels, block):
         color_table = block.color_table
     else:
         color_table = reader.color_table
-    for y in range (block.top, block.top + block.height):
+    if block.interlace:
+        top = block.top
+        bottom = block.top + block.height
+        row_iter = itertools.chain (range (top, bottom, 8), range (top + 4, bottom, 8), range (top + 2, bottom, 4), range (top + 1, bottom, 2))
+    else:
+        row_iter = range (block.top, block.top + block.height)
+    for y in row_iter:
         for x in range (block.left, block.left + block.width):
             if i >= len (block_pixels):
                 return
