@@ -1,0 +1,17 @@
+import gif
+
+file = open ('checkerboard.gif', 'rb')
+reader = gif.Reader ()
+reader.feed (file.read ())
+if reader.has_screen_descriptor ():
+    print ('Size: %dx%d' % (reader.width, reader.height))
+    print ('Colors: %s' % repr (reader.color_table))
+    for block in reader.blocks:
+        if isinstance (block, gif.Image):
+            print ('Pixels: %s' % repr (block.get_pixels ()))
+    if reader.has_unknown_block ():
+        print ('Encountered unknown block')
+    elif not reader.is_complete ():
+        print ('Missing trailer')
+else:
+    print ('Not a valid GIF file')
