@@ -327,7 +327,7 @@ class Reader:
                     first_subblock = b''
 
                 if label == ExtensionLabel.PLAIN_TEXT and len (first_subblock) == 12:
-                    (left, top, width, height, cell_width, cell_height, foreground_color, background_color) = struct.unpack ('<HHHHBBBB', subblocks[0])
+                    (left, top, width, height, cell_width, cell_height, foreground_color, background_color) = struct.unpack ('<HHHHBBBB', first_subblock)
                     block = PlainTextExtension (self, block_start, block_length, left, top, width, height, cell_width, cell_height, foreground_color, background_color)
                 elif label == ExtensionLabel.GRAPHIC_CONTROL and len (first_subblock) == 4:
                     (flags, delay_time, transparent_color) = struct.unpack ('<BHB', first_subblock)
