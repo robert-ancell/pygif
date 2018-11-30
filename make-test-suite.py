@@ -215,9 +215,6 @@ writer.write_trailer ()
 writer = make_gif ('extra-pixels', 'white-dot', 1, 1, palette8)
 writer.write_image (1, 1, 3, filled_pixels (10, 10, WHITE))
 writer.write_trailer ()
-#writer = make_gif ('additional-data-after-eoi', 'white-dot', 1, 1, palette8)
-#writer.write_image (1, 1, 3, filled_pixels (10, 10, WHITE))
-#writer.write_trailer ()
 
 # Addtional data after end-of-information
 writer = make_gif ('extra-data', 'white-dot', 1, 1, palette8)
