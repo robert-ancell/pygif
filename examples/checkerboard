@@ -1,0 +1,17 @@
+#!/usr/bin/python3
+
+import gif
+
+writer = gif.Writer (open ('checkerboard.gif', 'wb'))
+writer.write_header ()
+writer.write_screen_descriptor (8, 8, has_color_table = True, depth = 1)
+writer.write_color_table ([(0, 0, 0), (255, 255, 255)], 1)
+writer.write_image (8, 8, 1, [ 1, 0, 1, 0, 1, 0, 1, 0,
+                               0, 1, 0, 1, 0, 1, 0, 1,
+                               1, 0, 1, 0, 1, 0, 1, 0,
+                               0, 1, 0, 1, 0, 1, 0, 1,
+                               1, 0, 1, 0, 1, 0, 1, 0,
+                               0, 1, 0, 1, 0, 1, 0, 1,
+                               1, 0, 1, 0, 1, 0, 1, 0,
+                               0, 1, 0, 1, 0, 1, 0, 1 ])
+writer.write_trailer ()
