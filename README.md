@@ -1,6 +1,6 @@
 This repository contains a Python encoder and decoder for the [GIF file format](https://www.w3.org/Graphics/GIF/spec-gif89a.txt).
 
-The easiest way to get PyGIF is to install using pip:
+The easiest way to get PyGIF is to install from the [Python Packaging Index](https://pypi.org/project/pygif/):
 ```
 pip install pygif
 ```
