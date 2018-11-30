@@ -1,0 +1,98 @@
+#!/usr/bin/python3
+
+import array
+import configparser
+import gif
+import png
+
+def get_color (color_table, index):
+    if index < len (color_table):
+        return color_table[index]
+    else:
+        return (0, 0, 0)
+
+def render_block (reader, pixels, block):
+    i = 0
+    block_pixels = block.get_pixels ()
+    if len (block.color_table) > 0:
+        color_table = block.color_table
+    else:
+        color_table = reader.color_table
+    for y in range (block.top, block.top + block.height):
+        for x in range (block.left, block.left + block.width):
+            if i >= len (block_pixels):
+                return
+            p = block_pixels[i]
+            x0 = x - block.left
+            y0 = y - block.top
+            if 0 <= x0 <= reader.width and 0 <= y0 <= reader.height:
+                (red, green, blue) = get_color (color_table, p)
+                offset = (y0 * reader.width + x0) * 4
+                pixels[offset + 0] = red
+                pixels[offset + 1] = green
+                pixels[offset + 2] = blue
+                pixels[offset + 3] = 255
+
+def dispose_block (reader, pixels, block):
+    pass
+
+def render (reader):
+    # Fill background
+    pixels = array.array ('B')
+    color = get_color (reader.color_table, reader.background_color)
+    for y in range (reader.height):
+        for x in range (reader.width):
+            (red, green, blue) = color
+            pixels.append (red)
+            pixels.append (green)
+            pixels.append (blue)
+            pixels.append (255)
+
+    # Write images onto backgroun
+    for block in reader.blocks:
+        if isinstance (block, gif.Image):
+            render_block (reader, pixels, block)
+            # FIXME: Check
+            print ('  Frame')
+            dispose_block (reader, pixels, block)
+
+    return (reader.width, reader.height, pixels)
+
+def compare_to_reference_frame (reader, pixels, filename):
+    png_reader = png.Reader (filename)
+    (width, height, r_pixels, _) = png_reader.read_flat ()
+    if (width, height) != (reader.width, reader.height):
+        print ('Size mismatch!')
+        return False
+    for y in range (height):
+        for x in range (width):
+            offset = (y0 * reader.width + x) * 4
+            color = (pixels[offset + 0], pixels[offset + 1], pixels[offset + 2], pixels[offset + 3])
+            r_color = (r_pixels[offset + 0], r_pixels[offset + 1], r_pixels[offset + 2], r_pixels[offset + 3])
+            if color != r_color:
+                print ('Pixel mismatch at %d,%d!', x, y)
+                return False
+    return True;
+
+lines = open ('test-suite/TESTS').readlines ()
+for line in lines:
+    name = line.strip ()
+    if name == '':
+        continue
+
+    print ('Running %s' % name)
+
+    config = configparser.ConfigParser ()
+    config.read ('test-suite/%s.conf' % name)
+
+    c = config['config']
+    input_filename = c['input']
+    frames = c['frames'].split (',')
+
+    reader = gif.Reader ()
+    data = open ('test-suite/%s' % input_filename, 'rb').read ()
+    reader.feed (data)
+
+    if name != 'max-size':
+        (width, height, pixels) = render (reader)
+    print ('  %s' % input_filename)
