@@ -3,3 +3,5 @@ build/
 dist/
 pygif.egg-info/
 *.pyc
+examples/checkerboard.gif
+examples/sample_1.gif
