@@ -8,9 +8,10 @@ import sys
 
 def get_color (color_table, index):
     if index < len (color_table):
-        return color_table[index]
+        (red, green, blue) = color_table[index]
+        return (red, green, blue, 255)
     else:
-        return (0, 0, 0)
+        return (0, 0, 0, 255)
 
 def render_block (reader, pixels, block):
     i = 0
@@ -23,16 +24,15 @@ def render_block (reader, pixels, block):
         for x in range (block.left, block.left + block.width):
             if i >= len (block_pixels):
                 return
-            p = block_pixels[i]
-            x0 = x - block.left
-            y0 = y - block.top
-            if 0 <= x0 <= reader.width and 0 <= y0 <= reader.height:
-                (red, green, blue) = get_color (color_table, p)
-                offset = (y0 * reader.width + x0) * 4
+            index = block_pixels[i]
+            i += 1
+            if 0 <= x < reader.width and 0 <= y < reader.height:
+                (red, green, blue, alpha) = get_color (color_table, index)
+                offset = (y * reader.width + x) * 4
                 pixels[offset + 0] = red
                 pixels[offset + 1] = green
                 pixels[offset + 2] = blue
-                pixels[offset + 3] = 255
+                pixels[offset + 3] = alpha
 
 def dispose_block (reader, pixels, block):
     pass
@@ -43,11 +43,11 @@ def render (reader):
     color = get_color (reader.color_table, reader.background_color)
     for y in range (reader.height):
         for x in range (reader.width):
-            (red, green, blue) = color
+            (red, green, blue, alpha) = color
             pixels.append (red)
             pixels.append (green)
             pixels.append (blue)
-            pixels.append (255)
+            pixels.append (alpha)
 
     # Write images onto backgroun
     for block in reader.blocks:
