@@ -49,6 +49,7 @@ animation-subimage
 animation-subimage-add
 animation-subimage-move
 animation-multi-image
+animation-multi-image-explicit-zero-delay
 comment
 large-comment
 nul-comment

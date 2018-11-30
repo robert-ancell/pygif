@@ -371,7 +371,7 @@ writer.write_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK])
 writer.write_trailer ()
 
 # Animated image with subimages
-# NOTE: RESTORE_BG appears to be interpreted as transparency
+# NOTE: RESTORE_BACKGROUND appears to be interpreted as transparency
 writer = make_gif ('animation-subimage', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (gif.DisposalMethod.RESTORE_BACKGROUND, delay_time = 50)
@@ -413,16 +413,41 @@ writer.write_trailer ()
 
 # FIXME: Test restore only applies to area drawn on
 
-# Animation with multiple images per frame
-# NOTE: Everyone seems to be doing this wrong...
-writer = make_gif ('animation-multi-image', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 1, palette4, loop_count = -1)
+# Animation with multiple images per frame - should not see the red as it will be drawn over
+# NOTE: Everyone seems to be doing this wrong and delaying each image by 10ms regardless of the fact the delay should be zero
+writer = make_gif ('animation-multi-image', [('animation-fill.0', 50), ('animation-fill.1', 50), ('animation-fill.2', 50), ('animation-fill.3', 50)], 2, 2, palette4, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
-writer.write_image (2, 1, 2, [ BLACK, RED ])
-writer.write_graphic_control_extension (delay_time = 50)
-writer.write_image (2, 1, 2, [ BLACK, WHITE ])
-writer.write_image (2, 1, 2, [ RED,   BLACK ])
-writer.write_graphic_control_extension (delay_time = 50)
-writer.write_image (2, 1, 2, [ WHITE, BLACK ])
+writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
+writer.write_image (2, 2, 2, [ WHITE, BLACK, BLACK, BLACK ])
+writer.write_image (1, 1, 2, [ RED ], 1, 0)
+writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
+writer.write_image (1, 1, 2, [ WHITE ], 1, 0)
+writer.write_image (1, 1, 2, [ RED ], 1, 1,)
+writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
+writer.write_image (1, 1, 2, [ WHITE ], 1, 1,)
+writer.write_image (1, 1, 2, [ RED ], 0, 1)
+writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
+writer.write_image (1, 1, 2, [ WHITE ], 0, 1)
+writer.write_trailer ()
+
+# Animation with multiple images per frame - should not see the red as it will be drawn over
+# NOTE: Everyone seems to be doing this wrong and delaying each image by 10ms regardless of the fact the delay should be zero
+writer = make_gif ('animation-multi-image-explicit-zero-delay', [('animation-fill.0', 50), ('animation-fill.1', 50), ('animation-fill.2', 50), ('animation-fill.3', 50)], 2, 2, palette4, loop_count = -1)
+writer.write_netscape_extension (loop_count = 0)
+writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
+writer.write_image (2, 2, 2, [ WHITE, BLACK, BLACK, BLACK ])
+writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 0)
+writer.write_image (1, 1, 2, [ RED ], 1, 0)
+writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
+writer.write_image (1, 1, 2, [ WHITE ], 1, 0)
+writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 0)
+writer.write_image (1, 1, 2, [ RED ], 1, 1,)
+writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
+writer.write_image (1, 1, 2, [ WHITE ], 1, 1,)
+writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 0)
+writer.write_image (1, 1, 2, [ RED ], 0, 1)
+writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
+writer.write_image (1, 1, 2, [ WHITE ], 0, 1)
 writer.write_trailer ()
 
 # FIXME: Animation with explicit delay times of zero

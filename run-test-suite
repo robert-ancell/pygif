@@ -14,6 +14,14 @@ def get_color (color_table, index):
     else:
         return (0, 0, 0, 255)
 
+def set_pixel (reader, pixels, x, y, color):
+    offset = (y * reader.width + x) * 4
+    (red, green, blue, alpha) = color
+    pixels[offset + 0] = red
+    pixels[offset + 1] = green
+    pixels[offset + 2] = blue
+    pixels[offset + 3] = alpha
+
 def render_block (reader, pixels, block, transparent_color):
     i = 0
     block_pixels = block.get_pixels ()
@@ -34,17 +42,23 @@ def render_block (reader, pixels, block, transparent_color):
             index = block_pixels[i]
             i += 1
             if 0 <= x < reader.width and 0 <= y < reader.height:
-                (red, green, blue, alpha) = get_color (color_table, index)
                 if index == transparent_color:
-                    alpha = 0
-                offset = (y * reader.width + x) * 4
-                pixels[offset + 0] = red
-                pixels[offset + 1] = green
-                pixels[offset + 2] = blue
-                pixels[offset + 3] = alpha
+                    color = (0, 0, 0, 0)
+                else:
+                    color = get_color (color_table, index)
+                set_pixel (reader, pixels, x, y, color)
 
-def dispose_block (reader, pixels, block):
-    pass
+def dispose_block (reader, pixels, block, method):
+    if method == gif.DisposalMethod.KEEP:
+        pass
+    elif method == gif.DisposalMethod.RESTORE_BACKGROUND:
+        color = (0, 0, 0, 0)
+        for y in range (block.top, block.top + block.height):
+            for x in range (block.left, block.left + block.width):
+                if 0 <= x < reader.width and 0 <= y < reader.height:
+                    set_pixel (reader, pixels, x, y, color)
+    elif method == gif.DisposalMethod.RESTORE_PREVIOUS:
+        pass # FIXME
 
 def render (reader):
     # Fill background
@@ -59,14 +73,17 @@ def render (reader):
             pixels.append (alpha)
 
     # Write images onto background
+    disposal_method = gif.DisposalMethod.NONE
     transparent_color = None
     for block in reader.blocks:
         if isinstance (block, gif.GraphicControlExtension):
+            disposal_method = block.disposal_method
             if block.has_transparent:
                 transparent_color = block.transparent_color
         elif isinstance (block, gif.Image):
             render_block (reader, pixels, block, transparent_color)
-            dispose_block (reader, pixels, block)
+            dispose_block (reader, pixels, block, disposal_method)
+            disposal_method = gif.DisposalMethod.NONE
             transparent_color = None
 
     return (reader.width, reader.height, pixels)
