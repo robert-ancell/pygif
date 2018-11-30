@@ -472,11 +472,11 @@ writer.write_trailer ()
 
 # XMP Data
 data = open ('test-suite/test.xmp').read ()
-writer = make_gif ('xmpd-data', 'white-dot', 1, 1, palette8, xmp_files = ['test.xmp'])
+writer = make_gif ('xmp-data', 'white-dot', 1, 1, palette8, xmp_files = ['test.xmp'])
 writer.write_xmp_data_extension (data)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('xmpd-data-empty', 'white-dot', 1, 1, palette8, xmp_files = ['empty.xmp'])
+writer = make_gif ('xmp-data-empty', 'white-dot', 1, 1, palette8, xmp_files = ['empty.xmp'])
 writer.write_xmp_data_extension ('')
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
