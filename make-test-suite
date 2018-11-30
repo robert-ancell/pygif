@@ -385,7 +385,7 @@ writer.write_image (1, 1, 1, [ WHITE ], 0, 1)
 writer.write_trailer ()
 
 # Background with animated subimages that add together
-writer = make_gif ('animation-subimage-add', 'animation-fill', 2, 2, palette2, loop_count = -1)
+writer = make_gif ('animation-subimage-add', [('animation-fill.0', 50), ('animation-fill.1', 50), ('animation-fill.2', 50), ('animation-fill.3', 50)], 2, 2, palette2, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
