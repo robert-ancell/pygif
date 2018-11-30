@@ -55,6 +55,8 @@ nul-comment
 invalid-ascii-comment
 invalid-utf8-comment
 plain-text
+xmpd-data
+xmpd-data-empty
 unknown-extension
 unknown-application-extension
 nul-application-extension

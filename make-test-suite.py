@@ -5,7 +5,7 @@ import gif
 import itertools
 import math
 
-def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, buffer_size = 0, comment = ''):
+def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, buffer_size = 0, comment = '', xmp_files = []):
     # Add to list of tests
     test_list = open ('test-suite/TESTS').readlines ()
     line = name + '\n'
@@ -28,6 +28,7 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
         config['config']['loop-count'] = '%d' % loop_count
     config['config']['buffer-size'] = '%d' % buffer_size
     config['config']['comment'] = repr (comment)
+    config['config']['xmp-data'] = ','.join (xmp_files)
     if isinstance (result, list):
         frames = []
         for (i, (image, delay)) in enumerate (result):
@@ -468,6 +469,17 @@ writer.write_plain_text_extension ('Hello', 0, 0, 5, 1, 8, 8, 1, 0)
 writer.write_image (40, 8, 3, filled_pixels (40, 8, BLACK))
 writer.write_trailer ()
 
+# XMP Data
+data = open ('test-suite/test.xmp').read ()
+writer = make_gif ('xmpd-data', 'white-dot', 1, 1, palette8, xmp_files = ['test.xmp'])
+writer.write_xmp_data_extension (data)
+writer.write_image (1, 1, 3, [ WHITE ])
+writer.write_trailer ()
+writer = make_gif ('xmpd-data-empty', 'white-dot', 1, 1, palette8, xmp_files = ['empty.xmp'])
+writer.write_xmp_data_extension ('')
+writer.write_image (1, 1, 3, [ WHITE ])
+writer.write_trailer ()
+
 # Unknown extensions
 writer = make_gif ('unknown-extension', 'white-dot', 1, 1, palette8)
 writer.write_extension (0x2a, [b'Hello', b'World'])
@@ -483,8 +495,6 @@ writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 
 # FIXME: Multiple clears in a row
-
-# FIXME: XMP data
 
 # FIXME: ICC profile
 
