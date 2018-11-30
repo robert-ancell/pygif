@@ -57,6 +57,8 @@ invalid-utf8-comment
 plain-text
 xmpd-data
 xmpd-data-empty
+icc-color-profile
+icc-color-profile-empty
 unknown-extension
 unknown-application-extension
 nul-application-extension

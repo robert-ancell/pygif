@@ -5,7 +5,7 @@ import gif
 import itertools
 import math
 
-def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, buffer_size = 0, comment = '', xmp_files = []):
+def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, buffer_size = 0, comment = '', xmp_files = [], icc_files = []):
     # Add to list of tests
     test_list = open ('test-suite/TESTS').readlines ()
     line = name + '\n'
@@ -29,6 +29,7 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
     config['config']['buffer-size'] = '%d' % buffer_size
     config['config']['comment'] = repr (comment)
     config['config']['xmp-data'] = ','.join (xmp_files)
+    config['config']['color-profiles'] = ','.join (icc_files)
     if isinstance (result, list):
         frames = []
         for (i, (image, delay)) in enumerate (result):
@@ -480,6 +481,17 @@ writer.write_xmp_data_extension ('')
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 
+# ICC profile
+data = open ('test-suite/sRGB.icc', 'rb').read ()
+writer = make_gif ('icc-color-profile', 'white-dot', 1, 1, palette8, icc_files = ['sRGB.icc'])
+writer.write_icc_color_profile_extension (data)
+writer.write_image (1, 1, 3, [ WHITE ])
+writer.write_trailer ()
+writer = make_gif ('icc-color-profile-empty', 'white-dot', 1, 1, palette8, icc_files = ['empty.icc'])
+writer.write_icc_color_profile_extension (b'')
+writer.write_image (1, 1, 3, [ WHITE ])
+writer.write_trailer ()
+
 # Unknown extensions
 writer = make_gif ('unknown-extension', 'white-dot', 1, 1, palette8)
 writer.write_extension (0x2a, [b'Hello', b'World'])
@@ -495,8 +507,6 @@ writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 
 # FIXME: Multiple clears in a row
-
-# FIXME: ICC profile
 
 # Support older version
 writer = make_gif ('gif87a', 'white-dot', 1, 1, palette2, version = gif.Version.GIF87a)
