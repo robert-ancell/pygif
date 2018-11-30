@@ -70,10 +70,10 @@ DARK_BLUE    = 12
 DARK_CYAN    = 13
 DARK_MAGENTA = 14
 DARK_YELLOW  = 15
-palette16 =  [ (0x00, 0x00, 0x00), (0xff, 0xff, 0xff),
-               (0xff, 0x00, 0x00), (0x00, 0xff, 0x00),
-               (0x00, 0x00, 0xff), (0x00, 0xff, 0xff), (0xff, 0x00, 0xff), (0xff, 0xff, 0x00),
-               (0x55, 0x55, 0x55), (0xaa, 0xaa, 0xaa), (0x80, 0x00, 0x00), (0x00, 0x80, 0x00), (0x00, 0x00, 0x80), (0x00, 0x80, 0x80), (0x80, 0x00, 0x80), (0x80, 0x80, 0x00)]
+palette16 =  [ (  0,   0,   0), (255, 255, 255), (255,   0,   0), (  0, 255,   0),
+               (  0,   0, 255), (  0, 255, 255), (255,   0, 255), (255, 255,   0),
+               ( 85,  85,  85), (170, 170, 170), (128,   0,   0), (  0, 128,   0),
+               (  0,   0, 128), (  0, 128, 128), (128,   0, 128), (128, 128,   0)]
 palette8 = palette16[:8]
 palette4 = palette16[:4]
 palette2 = palette16[:2]
@@ -102,13 +102,13 @@ writer.write_image (2, 2, 8, [RED, GREEN, BLUE, WHITE])
 writer.write_trailer ()
 
 # Local color table overrides global one
-writer = make_gif ('local-color-table', 'white-dot', 1, 1, [(0xff, 0x00, 0x00), (0x00, 0xff, 0x00)])
-writer.write_image (1, 1, 1, [1], colors = [(0x00, 0x00, 0xff), (0xff, 0xff, 0xff)])
+writer = make_gif ('local-color-table', 'white-dot', 1, 1, [(255, 0, 0), (0, 255, 0)])
+writer.write_image (1, 1, 1, [1], colors = [(0, 0, 255), (255, 255, 255)])
 writer.write_trailer ()
 
 # Global color table not needed if have local one
 writer = make_gif ('no-global-color-table', 'white-dot', 1, 1)
-writer.write_image (1, 1, 1, [1], colors = [(0x00, 0x00, 0xff), (0xff, 0xff, 0xff)])
+writer.write_image (1, 1, 1, [1], colors = [(0, 0, 255), (255, 255, 255)])
 writer.write_trailer ()
 
 # Image with no data (just shows background)
