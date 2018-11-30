@@ -300,7 +300,7 @@ class Reader:
                 color_table = []
                 if has_color_table:
                     for i in range (n_colors):
-                        offset = 10 + i * 3
+                        offset = block_start + 10 + i * 3
                         (red, green, blue) = struct.unpack ('BBB', self.buffer[offset: offset + 3])
                         color_table.append ((red, green, blue))
 
