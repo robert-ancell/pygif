@@ -173,17 +173,34 @@ def run_test (name):
     loop_count = 0
     for block in reader.blocks:
         if isinstance (block, gif.NetscapeExtension):
-            loop_count = block.loop_count
-            if loop_count == 0:
-                loop_count = 'infinite'
+            if block.loop_count is not None:
+                loop_count = block.loop_count
+                if loop_count == 0:
+                    loop_count = 'infinite'
         if isinstance (block, gif.AnimationExtension):
-            loop_count = block.loop_count
-            if loop_count == 0:
-                loop_count = 'infinite'
+            if block.loop_count is not None:
+                loop_count = block.loop_count
+                if loop_count == 0:
+                    loop_count = 'infinite'
     if loop_count != expected_loop_count:
         print ('  Loop count mismatch!')
         print ('  Got     : %s' % str (loop_count))
         print ('  Expected: %s' % str (expected_loop_count))
+        return False
+
+    expected_buffer_size = int (c['buffer-size'])
+    buffer_size = 0
+    for block in reader.blocks:
+        if isinstance (block, gif.NetscapeExtension):
+            if block.buffer_size is not None:
+                buffer_size = block.buffer_size
+        if isinstance (block, gif.AnimationExtension):
+            if block.buffer_size is not None:
+                buffer_size = block.buffer_size
+    if buffer_size != expected_buffer_size:
+        print ('  Buffer size mismatch!')
+        print ('  Got     : %d' % buffer_size)
+        print ('  Expected: %d' % expected_buffer_size)
         return False
 
     xmp_filename = c['xmp-data'].strip ()
