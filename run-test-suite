@@ -4,7 +4,6 @@ import array
 import configparser
 import gif
 import itertools
-import png
 import sys
 
 def get_color (color_table, index):
@@ -105,13 +104,9 @@ def render (reader):
     return (reader.width, reader.height, pixels)
 
 def compare_to_reference_frame (reader, pixels, filename):
-    png_reader = png.Reader (filename)
-    (width, height, r_pixels, _) = png_reader.read_flat ()
-    if (width, height) != (reader.width, reader.height):
-        print ('  Size mismatch! Got %dx%d, expected %dx%d' % (reader.width, reader.height, width, height))
-        return False
-    for y in range (height):
-        for x in range (width):
+    r_pixels = open (filename, 'rb').read ()
+    for y in range (reader.height):
+        for x in range (reader.width):
             color = get_pixel (reader, pixels, x, y)
             r_color = get_pixel (reader, r_pixels, x, y)
             if color[3] == r_color[3] == 0:
@@ -136,7 +131,8 @@ def run_test (name):
     frames = []
     frame_names = c['frames'].split (',')
     for frame_name in frame_names:
-        frames.append (config[frame_name])
+        if frame_name != '':
+            frames.append (config[frame_name])
 
     print ('  Loading image %s' % input_filename)
     reader = gif.Reader ()
@@ -147,12 +143,18 @@ def run_test (name):
     if name == 'max-size':
         return True
 
-    (width, height, pixels) = render (reader)
-    reference_filename = 'test-suite/%s' % frames[-1]['image']
-
-    # HACK: Skip tests that don't have reliable output
-    if reference_filename == 'test-suite/nocrash.png':
+    if len (frames) == 0:
         return True
+
+    (width, height, pixels) = render (reader)
+
+    frame = frames[-1]
+    reference_filename = 'test-suite/%s' % frame['pixels']
+    expected_width = int (frame['width'])
+    expected_height = int (frame['height'])
+    if (expected_width, expected_height) != (reader.width, reader.height):
+        print ('  Size mismatch! Got %dx%d, expected %dx%d' % (reader.width, reader.height, expected_width, expected_height))
+        return False
 
     print ('  Comparing to %s' % reference_filename)
     return compare_to_reference_frame (reader, pixels, reference_filename)

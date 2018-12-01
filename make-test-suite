@@ -4,6 +4,21 @@ import configparser
 import gif
 import itertools
 import math
+import png
+import struct
+
+class ReferenceImage:
+    def __init__ (self, name, width, height, pixels):
+        self.width = width
+        self.height = height
+        self.filename = '%s.rgba' % name
+        file = open ('test-suite/%s' % self.filename, 'wb')
+        data = b''
+        for (red, green, blue, alpha) in pixels:
+            data += struct.pack ('BBBB', red, green, blue, alpha)
+        file.write (data)
+        writer = png.Writer (width, height, alpha = True)
+        writer.write_array (open ('test-suite/%s.png' % name, 'wb'), data)
 
 def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, force_animation = False, buffer_size = 0, comment = '', xmp_files = [], icc_files = []):
     # Add to list of tests
@@ -31,18 +46,25 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
         else:
             return 'no'
     config['config']['force-animation'] = yes_or_no (force_animation)
-    if isinstance (result, list):
-        frames = []
-        for (i, (image, delay)) in enumerate (result):
-            id = 'frame%d' % i
-            frames.append (id)
-            config[id] = { 'image': '%s.png' % image }
-            if delay > 0:
-                config[id]['delay'] = '%d' % delay
-        config['config']['frames'] = ','.join (frames)
-    else:
-        config['config']['frames'] = 'frame0'
-        config['frame0'] = { 'image': '%s.png' % result }
+    if result is None:
+        result = []
+    if not isinstance (result, list):
+        result = [ result ]
+    frames = []
+    for (i, reference) in enumerate (result):
+        if isinstance (reference, tuple):
+            (image, delay) = reference
+        else:
+            image = reference
+            delay = 0
+        id = 'frame%d' % i
+        frames.append (id)
+        config[id] = { 'width': '%d' % image.width,
+                       'height': '%d' % image.height,
+                       'pixels': image.filename }
+        if delay > 0:
+            config[id]['delay'] = '%d' % delay
+    config['config']['frames'] = ','.join (frames)
     file = open ('test-suite/%s.conf' % name, 'w')
     file.write ('# Automatically generated, do not edit!\n')
     config.write (file)
@@ -95,60 +117,73 @@ def make_grayscale_palette (depth):
 def filled_pixels (width, height, color):
     return [color] * (width * height)
 
+white_dot = ReferenceImage ('white-dot', 1, 1, [ (255, 255, 255, 255) ])
+
 # Single pixel, all possible color depths
 for depth in range (1, 9):
     palette = make_grayscale_palette (depth)
-    writer = make_gif ('depth%d' % depth, 'white-dot', 1, 1, palette)
+    writer = make_gif ('depth%d' % depth, white_dot, 1, 1, palette)
     writer.write_image (1, 1, depth, [ 2 ** depth - 1 ])
     writer.write_trailer ()
 
+four_colors = ReferenceImage ('four-colors', 2, 2, [ (255, 0, 0, 255),  (0, 255, 0, 255), (0, 0, 255, 255), (255, 255, 255, 255) ])
+
 # Image with different colours in each pixel
-writer = make_gif ('four-colors', 'four-colors', 2, 2, palette8)
+writer = make_gif ('four-colors', four_colors, 2, 2, palette8)
 writer.write_image (2, 2, 8, [RED, GREEN, BLUE, WHITE])
 writer.write_trailer ()
 
 # Local color table overrides global one
-writer = make_gif ('local-color-table', 'white-dot', 1, 1, [(255, 0, 0), (0, 255, 0)])
+writer = make_gif ('local-color-table', white_dot, 1, 1, [(255, 0, 0), (0, 255, 0)])
 writer.write_image (1, 1, 1, [1], colors = [(0, 0, 255), (255, 255, 255)])
 writer.write_trailer ()
 
 # Global color table not needed if have local one
-writer = make_gif ('no-global-color-table', 'white-dot', 1, 1)
+writer = make_gif ('no-global-color-table', white_dot, 1, 1)
 writer.write_image (1, 1, 1, [1], colors = [(0, 0, 255), (255, 255, 255)])
 writer.write_trailer ()
 
 # Image with no data (just shows background)
-writer = make_gif ('no-data', 'white-dot', 1, 1, palette2, background_color = WHITE)
+writer = make_gif ('no-data', white_dot, 1, 1, palette2, background_color = WHITE)
 writer.write_trailer ()
 
 # Image with invalid background value
-writer = make_gif ('invalid-background', 'white-dot', 1, 1, palette2, background_color = 255)
+writer = make_gif ('invalid-background', white_dot, 1, 1, palette2, background_color = 255)
 writer.write_image (1, 1, 2, [ WHITE ])
 writer.write_trailer ()
 
 # Test all color bits work
 pixels = []
 colors = []
+colors_rgba = []
 for i in range (256):
     pixels.append (i)
     colors.append ((i, 0, 0))
-writer = make_gif ('all-reds', 'all-reds', 16, 16, colors)
+    colors_rgba.append ((i, 0, 0, 255))
+all_reds = ReferenceImage ('all-reds', 16, 16, colors_rgba)
+writer = make_gif ('all-reds', all_reds, 16, 16, colors)
 writer.write_image (16, 16, 8, pixels)
 writer.write_trailer ()
 pixels = []
 colors = []
+colors_rgba = []
 for i in range (256):
     pixels.append (i)
     colors.append ((0, i, 0))
-writer = make_gif ('all-greens', 'all-greens', 16, 16, colors)
+    colors_rgba.append ((0, i, 0, 255))
+all_greens = ReferenceImage ('all-greens', 16, 16, colors_rgba)
+writer = make_gif ('all-greens', all_greens, 16, 16, colors)
 writer.write_image (16, 16, 8, pixels)
 writer.write_trailer ()
 pixels = []
 colors = []
+colors_rgba = []
 for i in range (256):
     pixels.append (i)
     colors.append ((0, 0, i))
-writer = make_gif ('all-blues', 'all-blues', 16, 16, colors)
+    colors_rgba.append ((0, 0, i, 255))
+all_blues = ReferenceImage ('all-blues', 16, 16, colors_rgba)
+writer = make_gif ('all-blues', all_blues, 16, 16, colors)
 writer.write_image (16, 16, 8, pixels)
 writer.write_trailer ()
 
@@ -162,23 +197,27 @@ def interlace_rows (height):
 for row in interlace_rows (16):
     for col in range (16):
         pixels.append (row * 16 + col)
-writer = make_gif ('interlace', 'all-reds', 16, 16, colors)
+writer = make_gif ('interlace', all_reds, 16, 16, colors)
 writer.write_image (16, 16, 8, pixels, interlace = True)
 writer.write_trailer ()
 
+image_inside_bg = ReferenceImage ('image-inside-bg', 2, 2, [ (255, 0, 0, 255), (255, 255, 255, 255), (255, 255, 255, 255), (255, 255, 255, 255)])
+image_overlap_bg = ReferenceImage ('image-overlap-bg', 2, 2, [ (255, 255, 255, 255), (255, 255, 255, 255), (255, 255, 255, 255), (255, 0, 0, 255)])
+image_outside_bg = ReferenceImage ('image-outside-bg', 2, 2, [ (255, 255, 255, 255), (255, 255, 255, 255), (255, 255, 255, 255), (255, 255, 255, 255) ])
+
 # Images that don't fully cover the background
-writer = make_gif ('image-inside-bg', 'image-inside-bg', 3, 3, palette8, background_color = WHITE)
-writer.write_image (1, 1, 3, [ RED ], left = 1, top = 1)
+writer = make_gif ('image-inside-bg', image_inside_bg, 2, 2, palette8, background_color = WHITE)
+writer.write_image (1, 1, 3, [ RED ], left = 0, top = 0)
 writer.write_trailer ()
-writer = make_gif ('image-overlap-bg', 'image-overlap-bg', 2, 2, palette8, background_color = WHITE)
+writer = make_gif ('image-overlap-bg', image_overlap_bg, 2, 2, palette8, background_color = WHITE)
 writer.write_image (2, 2, 3, [ RED ] * 4, left = 1, top = 1)
 writer.write_trailer ()
-writer = make_gif ('image-outside-bg', 'image-outside-bg', 2, 2, palette8, background_color = WHITE)
+writer = make_gif ('image-outside-bg', image_outside_bg, 2, 2, palette8, background_color = WHITE)
 writer.write_image (2, 2, 3, [ RED ] * 4, left = 2, top = 2)
 writer.write_trailer ()
 
 # Multiple images in different places
-writer = make_gif ('images-combine', 'four-colors', 2, 2, palette8, background_color = WHITE)
+writer = make_gif ('images-combine', four_colors, 2, 2, palette8, background_color = WHITE)
 writer.write_image (1, 1, 3, [ RED ],   left = 0, top = 0)
 writer.write_image (1, 1, 3, [ GREEN ], left = 1, top = 0)
 writer.write_image (1, 1, 3, [ BLUE ],  left = 0, top = 1)
@@ -186,13 +225,20 @@ writer.write_image (1, 1, 3, [ WHITE ], left = 1, top = 1)
 writer.write_trailer ()
 
 # Multiple images overlapping
-writer = make_gif ('images-overlap', 'white-dot', 1, 1, palette8)
+writer = make_gif ('images-overlap', white_dot, 1, 1, palette8)
 writer.write_image (1, 1, 3, [ RED ])
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 
 # Image with >256 colors by using local color tables
-writer = make_gif ('high-color', 'high-color', 32, 32)
+colors = []
+def get_color (x, y):
+    return (math.floor (x * 256 / 32), math.floor (y * 256 / 32), 0)
+for y in range (32):
+    for x in range (32):
+        (red, green, blue) = get_color (x, y)
+        colors.append ((red, green, blue, 255))
+high_color = ReferenceImage ('high-color', 32, 32, colors)
 pixels = list (range (256))
 colors0 = []
 colors1 = []
@@ -200,12 +246,11 @@ colors2 = []
 colors3 = []
 for y in range (16):
     for x in range (16):
-        def get_color (x, y):
-            return (math.floor (x * 256 / 32), math.floor (y * 256 / 32), 0)
         colors0.append (get_color (x, y))
         colors1.append (get_color (x + 16, y))
         colors2.append (get_color (x, y + 16))
         colors3.append (get_color (x + 16, y + 16))
+writer = make_gif ('high-color', high_color, 32, 32)
 writer.write_image (16, 16, 8, pixels, left = 0, top = 0, colors = colors0)
 writer.write_image (16, 16, 8, pixels, left = 16, top = 0, colors = colors1)
 writer.write_image (16, 16, 8, pixels, left = 0, top = 16, colors = colors2)
@@ -213,67 +258,77 @@ writer.write_image (16, 16, 8, pixels, left = 16, top = 16, colors = colors3)
 writer.write_trailer ()
 
 # Image with additional pixels
-writer = make_gif ('extra-pixels', 'white-dot', 1, 1, palette8)
+writer = make_gif ('extra-pixels', white_dot, 1, 1, palette8)
 writer.write_image (1, 1, 3, filled_pixels (10, 10, WHITE))
 writer.write_trailer ()
 
 # Addtional data after end-of-information
-writer = make_gif ('extra-data', 'white-dot', 1, 1, palette8)
+writer = make_gif ('extra-data', white_dot, 1, 1, palette8)
 writer.write_image_descriptor (0, 0, 1, 1)
 encoder = gif.LZWEncoder (writer.file, min_code_size = 3)
 encoder.feed ([ WHITE ])
 encoder.finish (extra_data = b'HIDDEN MESSAGES')
 writer.write_trailer ()
 
+white_hline2 = ReferenceImage ('white-hline2', 2, 1, [ (255, 255, 255, 255), (255, 255, 255, 255) ])
+
 # Optional clear and end-of-information codes
-writer = make_gif ('no-clear', 'white-dot', 1, 1, palette8)
+writer = make_gif ('no-clear', white_dot, 1, 1, palette8)
 writer.write_image_descriptor (0, 0, 1, 1)
 encoder = gif.LZWEncoder (writer.file, min_code_size = 3, start_with_clear = False)
 encoder.feed ([ WHITE ])
 encoder.finish ()
 writer.write_trailer ()
-writer = make_gif ('no-eoi', 'white-dot', 1, 1, palette8)
+writer = make_gif ('no-eoi', white_dot, 1, 1, palette8)
 writer.write_image_descriptor (0, 0, 1, 1)
 encoder = gif.LZWEncoder (writer.file, min_code_size = 3)
 encoder.feed ([ WHITE ])
 encoder.finish (send_eoi = False)
 writer.write_trailer ()
 # Use 2x1 so the single byte of data contains two codes (6 bits) otherwise the decoder will read a second code due to the lack of EOI
-writer = make_gif ('no-clear-and-eoi', 'white-hline2', 2, 1, palette8)
+writer = make_gif ('no-clear-and-eoi', white_hline2, 2, 1, palette8)
 writer.write_image_descriptor (0, 0, 2, 1)
 encoder = gif.LZWEncoder (writer.file, min_code_size = 3, start_with_clear = False)
 encoder.feed ([ WHITE, WHITE ])
 encoder.finish (send_eoi = False)
 writer.write_trailer ()
 
+max_width = ReferenceImage ('max-width', 65535, 1, [ (255, 255, 255, 255) ] * 65535)
+max_height = ReferenceImage ('max-height', 1, 65535, [ (255, 255, 255, 255) ] * 65535)
+
 # Maximum sizes
-writer = make_gif ('max-width', 'max-width', 65535, 1, palette8)
+writer = make_gif ('max-width', max_width, 65535, 1, palette8)
 writer.write_image (65535, 1, 3, filled_pixels (65535, 1, WHITE))
 writer.write_trailer ()
-writer = make_gif ('max-height', 'max-height', 1, 65535, palette8)
+writer = make_gif ('max-height', max_height, 1, 65535, palette8)
 writer.write_image (1, 65535, 3, filled_pixels (1, 65535, WHITE))
 writer.write_trailer ()
-writer = make_gif ('max-size', 'nocrash', 65535, 65535, palette8)
+writer = make_gif ('max-size', None, 65535, 65535, palette8)
 writer.write_trailer ()
 
 # Generate a random image to test LZW compression
 random_width = 100
 random_height = 100
 pixels = []
+colors = []
 seed = 1
 for i in range (random_width*random_height):
     m = 2 ** 32
     seed = (1103515245 * seed + 12345) % m
-    pixels.append (math.floor (16 * seed / m))
-    assert (pixels[-1] < 16)
+    value = math.floor (16 * seed / m)
+    assert (value < 16)
+    pixels.append (value)
+    (red, green, blue) = palette16[value]
+    colors.append ((red, green, blue, 255))
+random_image = ReferenceImage ('random-image', random_width, random_height, colors)
 
 # Clear code when hit 12 bit limit
-writer = make_gif ('4095-codes-clear', '4095-codes', random_width, random_height, palette16)
+writer = make_gif ('4095-codes-clear', random_image, random_width, random_height, palette16)
 writer.write_image (random_width, random_height, 4, pixels)
 writer.write_trailer ()
 
 # Stop adding code words when hit code 12 bit limit
-writer = make_gif ('4095-codes', '4095-codes', random_width, random_height, palette16)
+writer = make_gif ('4095-codes', random_image, random_width, random_height, palette16)
 writer.write_image_descriptor (0, 0, random_width, random_height)
 encoder = gif.LZWEncoder (writer.file, min_code_size = 4, clear_on_max_width = False)
 encoder.feed (pixels)
@@ -281,7 +336,7 @@ encoder.finish ()
 writer.write_trailer ()
 
 # Have lots of clears by having a small code bit limit
-writer = make_gif ('255-codes', '4095-codes', random_width, random_height, palette16)
+writer = make_gif ('255-codes', random_image, random_width, random_height, palette16)
 writer.write_image_descriptor (0, 0, random_width, random_height)
 encoder = gif.LZWEncoder (writer.file, min_code_size = 4, max_code_size = 8)
 encoder.feed (pixels)
@@ -289,59 +344,61 @@ encoder.finish ()
 writer.write_trailer ()
 
 # Use a minimum code size
-writer = make_gif ('large-codes', '4095-codes', random_width, random_height, palette16)
+writer = make_gif ('large-codes', random_image, random_width, random_height, palette16)
 writer.write_image_descriptor (0, 0, random_width, random_height)
 encoder = gif.LZWEncoder (writer.file, min_code_size = 7)
 encoder.feed (pixels)
 encoder.finish ()
 writer.write_trailer ()
-writer = make_gif ('max-codes', '4095-codes', random_width, random_height, palette16)
+writer = make_gif ('max-codes', random_image, random_width, random_height, palette16)
 writer.write_image_descriptor (0, 0, random_width, random_height)
 encoder = gif.LZWEncoder (writer.file, min_code_size = 11)
 encoder.feed (pixels)
 encoder.finish ()
 writer.write_trailer ()
 
+four_colors_transparent = ReferenceImage ('four-colors-transparent', 2, 2, [ (0, 0, 0, 0),  (0, 255, 0, 255), (0, 0, 255, 255), (255, 255, 255, 255) ])
+
 # Transparent image
-writer = make_gif ('transparent', 'four-colors-transparent', 2, 2, palette8)
+writer = make_gif ('transparent', four_colors_transparent, 2, 2, palette8)
 writer.write_graphic_control_extension (has_transparent = True, transparent_color = RED)
 writer.write_image (2, 2, 3, [ RED, GREEN, BLUE, WHITE ])
 writer.write_trailer ()
 
 # Invalid transparency color
-writer = make_gif ('invalid-transparent', 'four-colors', 2, 2, palette8)
+writer = make_gif ('invalid-transparent', four_colors, 2, 2, palette8)
 writer.write_graphic_control_extension (has_transparent = True, transparent_color = 255)
 writer.write_image (2, 2, 3, [ RED, GREEN, BLUE, WHITE ])
 writer.write_trailer ()
 
 # Transparency color set but transparency disabled
-writer = make_gif ('disabled-transparent', 'four-colors', 2, 2, palette8)
+writer = make_gif ('disabled-transparent', four_colors, 2, 2, palette8)
 writer.write_graphic_control_extension (has_transparent = False, transparent_color = RED)
 writer.write_image (2, 2, 3, [ RED, GREEN, BLUE, WHITE ])
 writer.write_trailer ()
 
 # Loops
-writer = make_gif ('loop-infinite', 'white-dot', 1, 1, palette8, loop_count = -1)
+writer = make_gif ('loop-infinite', white_dot, 1, 1, palette8, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-once', 'white-dot', 1, 1, palette8, loop_count = 1)
+writer = make_gif ('loop-once', white_dot, 1, 1, palette8, loop_count = 1)
 writer.write_netscape_extension (loop_count = 1)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-max', 'white-dot', 1, 1, palette8, loop_count = 65535)
+writer = make_gif ('loop-max', white_dot, 1, 1, palette8, loop_count = 65535)
 writer.write_netscape_extension (loop_count = 65535)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-buffer', 'white-dot', 1, 1, palette8, loop_count = -1, buffer_size = 1024)
+writer = make_gif ('loop-buffer', white_dot, 1, 1, palette8, loop_count = -1, buffer_size = 1024)
 writer.write_netscape_extension (loop_count = 0, buffer_size = 1024)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-buffer_max', 'white-dot', 1, 1, palette8, loop_count = -1, buffer_size = 4294967295)
+writer = make_gif ('loop-buffer_max', white_dot, 1, 1, palette8, loop_count = -1, buffer_size = 4294967295)
 writer.write_netscape_extension (loop_count = 0, buffer_size = 4294967295)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('loop-animexts', 'white-dot', 1, 1, palette8, loop_count = -1, buffer_size = 1024)
+writer = make_gif ('loop-animexts', white_dot, 1, 1, palette8, loop_count = -1, buffer_size = 1024)
 writer.write_animexts_extension (loop_count = 0, buffer_size = 1024)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
@@ -350,8 +407,23 @@ writer.write_trailer ()
 
 # FIXME: NETSCAPE with multiple loop fields
 
+animation_0 = ReferenceImage ('animation.0', 2, 2, [ (255, 255, 255, 255), (  0,   0,   0, 255), (  0,   0,   0, 255), (  0,   0,   0, 255) ])
+animation_1 = ReferenceImage ('animation.1', 2, 2, [ (  0,   0,   0, 255), (255, 255, 255, 255), (  0,   0,   0, 255), (  0,   0,   0, 255) ])
+animation_2 = ReferenceImage ('animation.2', 2, 2, [ (  0,   0,   0, 255), (  0,   0,   0, 255), (  0,   0,   0, 255), (255, 255, 255, 255) ])
+animation_3 = ReferenceImage ('animation.3', 2, 2, [ (  0,   0,   0, 255), (  0,   0,   0, 255), (255, 255, 255, 255), (  0,   0,   0, 255) ])
+
+animation_fill_0 = ReferenceImage ('animation-fill.0', 2, 2, [ (255, 255, 255, 255), (  0,   0,   0, 255), (  0,   0,   0, 255), (  0,   0,   0, 255) ])
+animation_fill_1 = ReferenceImage ('animation-fill.1', 2, 2, [ (255, 255, 255, 255), (255, 255, 255, 255), (  0,   0,   0, 255), (  0,   0,   0, 255) ])
+animation_fill_2 = ReferenceImage ('animation-fill.2', 2, 2, [ (255, 255, 255, 255), (255, 255, 255, 255), (  0,   0,   0, 255), (255, 255, 255, 255) ])
+animation_fill_3 = ReferenceImage ('animation-fill.3', 2, 2, [ (255, 255, 255, 255), (255, 255, 255, 255), (255, 255, 255, 255), (255, 255, 255, 255) ])
+
+animation_erase_0 = ReferenceImage ('animation-erase.0', 2, 2, [ (255, 255, 255, 255), (  0,   0,   0, 255), (  0,   0,   0, 255), (  0,   0,   0, 255) ])
+animation_erase_1 = ReferenceImage ('animation-erase.1', 2, 2, [ (  0,   0,   0,   0), (255, 255, 255, 255), (  0,   0,   0, 255), (  0,   0,   0, 255) ])
+animation_erase_2 = ReferenceImage ('animation-erase.2', 2, 2, [ (  0,   0,   0,   0), (  0,   0,   0,   0), (  0,   0,   0, 255), (255, 255, 255, 255) ])
+animation_erase_3 = ReferenceImage ('animation-erase.3', 2, 2, [ (  0,   0,   0,   0), (  0,   0,   0,   0), (255, 255, 255, 255), (  0,   0,   0,   0) ])
+
 # Animated image
-writer = make_gif ('animation', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2, loop_count = -1)
+writer = make_gif ('animation', [(animation_0, 50), (animation_1, 50), (animation_2, 50), (animation_3, 50)], 2, 2, palette2, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (delay_time = 50)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
@@ -364,7 +436,7 @@ writer.write_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK])
 writer.write_trailer ()
 
 # Animation with variable frame speed
-writer = make_gif ('animation-speed', [('animation.0', 25), ('animation.1', 50), ('animation.2', 100), ('animation.3', 200)], 2, 2, palette2, loop_count = -1)
+writer = make_gif ('animation-speed', [(animation_0, 25), (animation_1, 50), (animation_2, 100), (animation_3, 200)], 2, 2, palette2, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (delay_time = 25)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
@@ -377,7 +449,7 @@ writer.write_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK])
 writer.write_trailer ()
 
 # Animation without any delays set - GIF renderers commonly assume this should be animated with a default delay value
-writer = make_gif ('animation-no-delays', [('animation.0', 0), ('animation.1', 0), ('animation.2', 0), ('animation.3', 0)], 2, 2, palette2, loop_count = -1, force_animation = True)
+writer = make_gif ('animation-no-delays', [(animation_0, 0), (animation_1, 0), (animation_2, 0), (animation_3, 0)], 2, 2, palette2, loop_count = -1, force_animation = True)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
 writer.write_image (2, 2, 1, [BLACK, WHITE, BLACK, BLACK])
@@ -386,7 +458,7 @@ writer.write_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK])
 writer.write_trailer ()
 
 # Animation without zero frame times - GIF renderers commonly assume this should be animated with a default delay value
-writer = make_gif ('animation-zero-delays', [('animation.0', 0), ('animation.1', 0), ('animation.2', 0), ('animation.3', 0)], 2, 2, palette2, loop_count = -1, force_animation = True)
+writer = make_gif ('animation-zero-delays', [(animation_0, 0), (animation_1, 0), (animation_2, 0), (animation_3, 0)], 2, 2, palette2, loop_count = -1, force_animation = True)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (delay_time = 0)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
@@ -399,7 +471,7 @@ writer.write_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK])
 writer.write_trailer ()
 
 # Background with animated subimages that add together
-writer = make_gif ('dispose-none', [('animation-fill.0', 50), ('animation-fill.1', 50), ('animation-fill.2', 50), ('animation-fill.3', 50)], 2, 2, palette2, loop_count = -1)
+writer = make_gif ('dispose-none', [(animation_fill_0, 50), (animation_fill_1, 50), (animation_fill_2, 50), (animation_fill_3, 50)], 2, 2, palette2, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (gif.DisposalMethod.NONE, delay_time = 50)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
@@ -412,7 +484,7 @@ writer.write_image (1, 1, 1, [ WHITE ], 0, 1)
 writer.write_trailer ()
 
 # Background with animated subimages that add together
-writer = make_gif ('dispose-keep', [('animation-fill.0', 50), ('animation-fill.1', 50), ('animation-fill.2', 50), ('animation-fill.3', 50)], 2, 2, palette2, loop_count = -1)
+writer = make_gif ('dispose-keep', [(animation_fill_0, 50), (animation_fill_1, 50), (animation_fill_2, 50), (animation_fill_3, 50)], 2, 2, palette2, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
@@ -426,7 +498,7 @@ writer.write_trailer ()
 
 # Animated image with subimages
 # NOTE: RESTORE_BACKGROUND appears to be interpreted as transparency
-writer = make_gif ('dispose-restore-background', [('animation-erase.0', 50), ('animation-erase.1', 50), ('animation-erase.2', 50), ('animation-erase.3', 50)], 2, 2, palette2, loop_count = -1)
+writer = make_gif ('dispose-restore-background', [(animation_erase_0, 50), (animation_erase_1, 50), (animation_erase_2, 50), (animation_erase_3, 50)], 2, 2, palette2, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (gif.DisposalMethod.RESTORE_BACKGROUND, delay_time = 50)
 writer.write_image (1, 1, 1, [ WHITE ], 0, 0)
@@ -439,7 +511,7 @@ writer.write_image (1, 1, 1, [ WHITE ], 0, 1)
 writer.write_trailer ()
 
 # Background with animated subimages that move over initial background
-writer = make_gif ('dispose-restore-previous', [('animation.0', 50), ('animation.1', 50), ('animation.2', 50), ('animation.3', 50)], 2, 2, palette2, loop_count = -1)
+writer = make_gif ('dispose-restore-previous', [(animation_0, 50), (animation_1, 50), (animation_2, 50), (animation_3, 50)], 2, 2, palette2, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_image (2, 2, 1, [ BLACK, BLACK, BLACK, BLACK ])
 writer.write_graphic_control_extension (gif.DisposalMethod.RESTORE_PREVIOUS, delay_time = 50)
@@ -456,7 +528,7 @@ writer.write_trailer ()
 
 # Animation with multiple images per frame - should not see the red as it will be drawn over
 # NOTE: Everyone seems to be doing this wrong and delaying each image by 10ms regardless of the fact the delay should be zero
-writer = make_gif ('animation-multi-image', [('animation-fill.0', 50), ('animation-fill.1', 50), ('animation-fill.2', 50), ('animation-fill.3', 50)], 2, 2, palette4, loop_count = -1)
+writer = make_gif ('animation-multi-image', [(animation_fill_0, 50), (animation_fill_1, 50), (animation_fill_2, 50), (animation_fill_3, 50)], 2, 2, palette4, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
 writer.write_image (2, 2, 2, [ WHITE, BLACK, BLACK, BLACK ])
@@ -473,7 +545,7 @@ writer.write_trailer ()
 
 # Animation with multiple images per frame - should not see the red as it will be drawn over
 # NOTE: Everyone seems to be doing this wrong and delaying each image by 10ms regardless of the fact the delay should be zero
-writer = make_gif ('animation-multi-image-explicit-zero-delay', [('animation-fill.0', 50), ('animation-fill.1', 50), ('animation-fill.2', 50), ('animation-fill.3', 50)], 2, 2, palette4, loop_count = -1)
+writer = make_gif ('animation-multi-image-explicit-zero-delay', [(animation_fill_0, 50), (animation_fill_1, 50), (animation_fill_2, 50), (animation_fill_3, 50)], 2, 2, palette4, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
 writer.write_graphic_control_extension (gif.DisposalMethod.KEEP, delay_time = 50)
 writer.write_image (2, 2, 2, [ WHITE, BLACK, BLACK, BLACK ])
@@ -497,69 +569,69 @@ writer.write_trailer ()
 
 # Comments
 comment = 'Hello World!'
-writer = make_gif ('comment', 'white-dot', 1, 1, palette8, comment = comment)
+writer = make_gif ('comment', white_dot, 1, 1, palette8, comment = comment)
 writer.write_comment_extension (comment)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 comment = ' '.join (['Hello World!'] * 1000)
-writer = make_gif ('large-comment', 'white-dot', 1, 1, palette8, comment = comment)
+writer = make_gif ('large-comment', white_dot, 1, 1, palette8, comment = comment)
 writer.write_comment_extension (comment)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 comment = '\0'
-writer = make_gif ('nul-comment', 'white-dot', 1, 1, palette8, comment = comment)
+writer = make_gif ('nul-comment', white_dot, 1, 1, palette8, comment = comment)
 writer.write_comment_extension (comment)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 comment = '\xff'
-writer = make_gif ('invalid-ascii-comment', 'white-dot', 1, 1, palette8, comment = comment)
+writer = make_gif ('invalid-ascii-comment', white_dot, 1, 1, palette8, comment = comment)
 writer.write_comment_extension (comment)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 comment = '\xc3\x28'
-writer = make_gif ('invalid-utf8-comment', 'white-dot', 1, 1, palette8, comment = comment)
+writer = make_gif ('invalid-utf8-comment', white_dot, 1, 1, palette8, comment = comment)
 writer.write_comment_extension (comment)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 
 # Plain Text extension
-writer = make_gif ('plain-text', 'nocrash', 40, 8, palette8)
+writer = make_gif ('plain-text', None, 40, 8, palette8)
 writer.write_plain_text_extension ('Hello', 0, 0, 5, 1, 8, 8, 1, 0)
 writer.write_image (40, 8, 3, filled_pixels (40, 8, BLACK))
 writer.write_trailer ()
 
 # XMP Data
 data = open ('test-suite/test.xmp').read ()
-writer = make_gif ('xmp-data', 'white-dot', 1, 1, palette8, xmp_files = ['test.xmp'])
+writer = make_gif ('xmp-data', white_dot, 1, 1, palette8, xmp_files = ['test.xmp'])
 writer.write_xmp_data_extension (data)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('xmp-data-empty', 'white-dot', 1, 1, palette8, xmp_files = ['empty.xmp'])
+writer = make_gif ('xmp-data-empty', white_dot, 1, 1, palette8, xmp_files = ['empty.xmp'])
 writer.write_xmp_data_extension ('')
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 
 # ICC profile
 data = open ('test-suite/sRGB.icc', 'rb').read ()
-writer = make_gif ('icc-color-profile', 'white-dot', 1, 1, palette8, icc_files = ['sRGB.icc'])
+writer = make_gif ('icc-color-profile', white_dot, 1, 1, palette8, icc_files = ['sRGB.icc'])
 writer.write_icc_color_profile_extension (data)
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('icc-color-profile-empty', 'white-dot', 1, 1, palette8, icc_files = ['empty.icc'])
+writer = make_gif ('icc-color-profile-empty', white_dot, 1, 1, palette8, icc_files = ['empty.icc'])
 writer.write_icc_color_profile_extension (b'')
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
 
 # Unknown extensions
-writer = make_gif ('unknown-extension', 'white-dot', 1, 1, palette8)
+writer = make_gif ('unknown-extension', white_dot, 1, 1, palette8)
 writer.write_extension (0x2a, [b'Hello', b'World'])
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('unknown-application-extension', 'white-dot', 1, 1, palette8)
+writer = make_gif ('unknown-application-extension', white_dot, 1, 1, palette8)
 writer.write_application_extension ('UNKNOWN!', 'XXX', [b'Hello', b'World'])
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
-writer = make_gif ('nul-application-extension', 'white-dot', 1, 1, palette8)
+writer = make_gif ('nul-application-extension', white_dot, 1, 1, palette8)
 writer.write_application_extension ('\0\0\0\0\0\0\0\0', '\0\0\0', [b'\0\0\0\0', b'\0\0\0\0'])
 writer.write_image (1, 1, 3, [ WHITE ])
 writer.write_trailer ()
@@ -567,12 +639,12 @@ writer.write_trailer ()
 # FIXME: Multiple clears in a row
 
 # Support older version
-writer = make_gif ('gif87a', 'white-dot', 1, 1, palette2, version = gif.Version.GIF87a)
+writer = make_gif ('gif87a', white_dot, 1, 1, palette2, version = gif.Version.GIF87a)
 writer.write_image (1, 1, 2, [ WHITE ])
 writer.write_trailer ()
 
 # Animation in GIF87a - GIF renderers commonly assume this should be animated
-writer = make_gif ('gif87a-animation', [('animation.0', 0), ('animation.1', 0), ('animation.2', 0), ('animation.3', 0)], 2, 2, palette2, loop_count = -1, force_animation = True)
+writer = make_gif ('gif87a-animation', [(animation_0, 0), (animation_1, 0), (animation_2, 0), (animation_3, 0)], 2, 2, palette2, loop_count = -1, force_animation = True)
 writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
 writer.write_image (2, 2, 1, [BLACK, WHITE, BLACK, BLACK])
 writer.write_image (2, 2, 1, [BLACK, BLACK, BLACK, WHITE])

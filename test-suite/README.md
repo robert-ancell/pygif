@@ -21,5 +21,7 @@ image = foo0.png         # Expected frame in PNG format
 delay = 5                # Expected delay after this frame in 1/100 ms
 
 [frame1]
-image = foo1.png         # Expected frame in PNG format
+width = 16               # Expected width in pixels
+height = 16              # Expected height in pixels
+pixels = foo1.rgba       # Expected pixel data in 8 bit RGBA format
 ```
