@@ -1,0 +1,40 @@
+#!/usr/bin/python3
+
+import png
+import gif
+import sys
+
+if len (sys.argv) < 3:
+    print ('Usage: gif2png [input.gif] [output.png]')
+    exit (1)
+
+reader = gif.Reader ()
+reader.feed (open (sys.argv[1], 'rb').read ())
+
+if not reader.has_screen_descriptor ():
+    print ('Not a valid GIF file')
+    exit (1)
+
+writer = png.Writer (reader.width, reader.height)
+
+for block in reader.blocks:
+    if isinstance (block, gif.Image):
+        indexes = block.get_pixels ()
+        rows = []
+        row = []
+        for i in indexes:
+            # FIXME: Transparent blocks
+            if len (block.color_table) > 0:
+                color = block.color_table[i]
+            else:
+                color = reader.color_table[i]
+            (red, green, blue) = color
+            row.append (red)
+            row.append (green)
+            row.append (blue)
+            if len (row) == reader.width * 3:
+                rows.append (row)
+                row = []
+        if len (row) > 0:
+            rows.append (row)
+        writer.write (open (sys.argv[2], 'wb'), rows)
