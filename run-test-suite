@@ -139,6 +139,12 @@ def run_test (name):
     data = open ('test-suite/%s' % input_filename, 'rb').read ()
     reader.feed (data)
 
+    expected_version = bytes (c['version'], 'utf-8')
+    if reader.version != expected_version:
+        print ('  Version mismatch!')
+        print ('  Got     : %s' % reader.version)
+        print ('  Expected: %s' % expected_version)
+
     def parse_string (value):
         result = ''
         quote = value[0]
