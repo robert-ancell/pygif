@@ -21,6 +21,7 @@ image-outside-bg
 images-combine
 images-overlap
 high-color
+missing-pixels
 extra-pixels
 extra-data
 no-clear
