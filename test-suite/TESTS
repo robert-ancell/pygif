@@ -45,6 +45,8 @@ loop-buffer_max
 loop-animexts
 animation
 animation-speed
+animation-no-delays
+animation-zero-delays
 dispose-none
 dispose-keep
 dispose-restore-background
@@ -65,3 +67,4 @@ unknown-extension
 unknown-application-extension
 nul-application-extension
 gif87a
+gif87a-animation

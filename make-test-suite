@@ -5,7 +5,7 @@ import gif
 import itertools
 import math
 
-def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, buffer_size = 0, comment = '', xmp_files = [], icc_files = []):
+def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, force_animation = False, buffer_size = 0, comment = '', xmp_files = [], icc_files = []):
     # Add to list of tests
     test_list = open ('test-suite/TESTS').readlines ()
     line = name + '\n'
@@ -25,6 +25,12 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
     config['config']['comment'] = repr (comment)
     config['config']['xmp-data'] = ','.join (xmp_files)
     config['config']['color-profiles'] = ','.join (icc_files)
+    def yes_or_no (value):
+        if value:
+            return 'yes'
+        else:
+            return 'no'
+    config['config']['force-animation'] = yes_or_no (force_animation)
     if isinstance (result, list):
         frames = []
         for (i, (image, delay)) in enumerate (result):
@@ -370,6 +376,28 @@ writer.write_graphic_control_extension (delay_time = 200)
 writer.write_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK])
 writer.write_trailer ()
 
+# Animation without any delays set - GIF renderers commonly assume this should be animated with a default delay value
+writer = make_gif ('animation-no-delays', [('animation.0', 0), ('animation.1', 0), ('animation.2', 0), ('animation.3', 0)], 2, 2, palette2, loop_count = -1, force_animation = True)
+writer.write_netscape_extension (loop_count = 0)
+writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
+writer.write_image (2, 2, 1, [BLACK, WHITE, BLACK, BLACK])
+writer.write_image (2, 2, 1, [BLACK, BLACK, BLACK, WHITE])
+writer.write_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK])
+writer.write_trailer ()
+
+# Animation without zero frame times - GIF renderers commonly assume this should be animated with a default delay value
+writer = make_gif ('animation-zero-delays', [('animation.0', 0), ('animation.1', 0), ('animation.2', 0), ('animation.3', 0)], 2, 2, palette2, loop_count = -1, force_animation = True)
+writer.write_netscape_extension (loop_count = 0)
+writer.write_graphic_control_extension (delay_time = 0)
+writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
+writer.write_graphic_control_extension (delay_time = 0)
+writer.write_image (2, 2, 1, [BLACK, WHITE, BLACK, BLACK])
+writer.write_graphic_control_extension (delay_time = 0)
+writer.write_image (2, 2, 1, [BLACK, BLACK, BLACK, WHITE])
+writer.write_graphic_control_extension (delay_time = 0)
+writer.write_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK])
+writer.write_trailer ()
+
 # Background with animated subimages that add together
 writer = make_gif ('dispose-none', [('animation-fill.0', 50), ('animation-fill.1', 50), ('animation-fill.2', 50), ('animation-fill.3', 50)], 2, 2, palette2, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)
@@ -541,6 +569,14 @@ writer.write_trailer ()
 # Support older version
 writer = make_gif ('gif87a', 'white-dot', 1, 1, palette2, version = gif.Version.GIF87a)
 writer.write_image (1, 1, 2, [ WHITE ])
+writer.write_trailer ()
+
+# Animation in GIF87a - GIF renderers commonly assume this should be animated
+writer = make_gif ('gif87a-animation', [('animation.0', 0), ('animation.1', 0), ('animation.2', 0), ('animation.3', 0)], 2, 2, palette2, loop_count = -1, force_animation = True)
+writer.write_image (2, 2, 1, [WHITE, BLACK, BLACK, BLACK])
+writer.write_image (2, 2, 1, [BLACK, WHITE, BLACK, BLACK])
+writer.write_image (2, 2, 1, [BLACK, BLACK, BLACK, WHITE])
+writer.write_image (2, 2, 1, [BLACK, BLACK, WHITE, BLACK])
 writer.write_trailer ()
 
 # FIXME: Check 89a features don't work in 87a
