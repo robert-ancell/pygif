@@ -186,11 +186,11 @@ class XMPDataExtension (ApplicationExtension):
     def __init__ (self, reader, offset, length):
         ApplicationExtension.__init__ (self, reader, offset, length, 'XMP Data', 'XMP')
 
-    def get_metadata (self):
+    def get_metadata (self, encoding = 'utf-8'):
         # This extension uses a clever hack to put raw XML in the file - it uses
         # a magic suffix that turns the XML text into valid GIF blocks.
         # We just need the raw blocks without the suffix
-        return self.reader.buffer[self.offset + 14: self.offset + self.length - 258]
+        return self.reader.buffer[self.offset + 14: self.offset + self.length - 258].decode (encoding)
 
 class ICCColorProfileExtension (ApplicationExtension):
     def __init__ (self, reader, offset, length):

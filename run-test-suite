@@ -139,6 +139,34 @@ def run_test (name):
     data = open ('test-suite/%s' % input_filename, 'rb').read ()
     reader.feed (data)
 
+    xmp_filename = c['xmp-data'].strip ()
+    if xmp_filename != '':
+        data = open ('test-suite/%s' % xmp_filename).read ()
+        expected_data = ''
+        for block in reader.blocks:
+            if isinstance (block, gif.XMPDataExtension):
+                expected_data = block.get_metadata ()
+        if data != expected_data:
+            print ('  XMP Data mismatch!')
+            print ('  Got:')
+            print (data)
+            print ('  Expected:')
+            print (expected_data)
+            return False
+
+    icc_filename = c['color-profile'].strip ()
+    if icc_filename != '':
+        data = open ('test-suite/%s' % icc_filename, 'rb').read ()
+        expected_data = b''
+        for block in reader.blocks:
+            if isinstance (block, gif.ICCColorProfileExtension):
+                expected_data = block.get_icc_profile ()
+        if data != expected_data:
+            print ('  ICC Color Profile mismatch!')
+            print ('  Got     : %s' % repr (data))
+            print ('  Expected: %s' % repr (expected_data))
+            return False
+
     # Skip test that uses too much memory
     if name == 'max-size':
         return True

@@ -39,7 +39,7 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
     config['config']['buffer-size'] = '%d' % buffer_size
     config['config']['comment'] = repr (comment)
     config['config']['xmp-data'] = ','.join (xmp_files)
-    config['config']['color-profiles'] = ','.join (icc_files)
+    config['config']['color-profile'] = ','.join (icc_files)
     def yes_or_no (value):
         if value:
             return 'yes'
