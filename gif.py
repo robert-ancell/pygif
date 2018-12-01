@@ -145,7 +145,7 @@ class CommentExtension (Extension):
 
     def get_comment (self, encoding = 'utf-8'):
         data = b''
-        for subblock in self.get_subblocks ()[1:]:
+        for subblock in self.get_subblocks ():
             data += subblock
         return data.decode (encoding)
 
@@ -598,7 +598,7 @@ class Writer:
         self.write_extension_header (ExtensionLabel.COMMENT)
         while len (text) > 0:
             self.write_extension_block (bytes (text[:255], 'utf-8'))
-            text = text[254:]
+            text = text[255:]
         self.write_extension_trailer ()
 
     def write_application_extension (self, application_identifier, application_authentication_code, blocks):

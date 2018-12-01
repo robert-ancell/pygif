@@ -139,6 +139,30 @@ def run_test (name):
     data = open ('test-suite/%s' % input_filename, 'rb').read ()
     reader.feed (data)
 
+    def parse_string (value):
+        result = ''
+        quote = value[0]
+        value = value[1:]
+        while len (value) > 1:
+            if value.startswith ('\\x'):
+                result += chr (int (value[2:4]))
+                value = value[4:]
+            else:
+                result += value[0]
+                value = value[1:]
+        assert (value[0] == quote)
+        return result
+    expected_comment = parse_string (c['comment'])
+    comment = ''
+    for block in reader.blocks:
+        if isinstance (block, gif.CommentExtension):
+            comment = block.get_comment ()
+    if comment != expected_comment:
+        print ('  Comment mismatch!')
+        print ('  Got      (%d): %s' % (len (comment), repr (comment)))
+        print ('  Expected (%d): %s' % (len (expected_comment), repr (expected_comment)))
+        return False
+
     xmp_filename = c['xmp-data'].strip ()
     xmp_data = ''
     if xmp_filename != '':
