@@ -164,13 +164,13 @@ def run_test (name):
         return False
 
     xmp_filename = c['xmp-data'].strip ()
-    xmp_data = ''
-    if xmp_filename != '':
-        xmp_data = open ('test-suite/%s' % xmp_filename).read ()
     expected_data = ''
+    if xmp_filename != '':
+        expected_data = open ('test-suite/%s' % xmp_filename).read ()
+    xmp_data = ''
     for block in reader.blocks:
         if isinstance (block, gif.XMPDataExtension):
-            expected_data = block.get_metadata ()
+            xmp_data = block.get_metadata ()
     if xmp_data != expected_data:
         print ('  XMP Data mismatch!')
         print ('  Got:')
@@ -180,13 +180,13 @@ def run_test (name):
         return False
 
     icc_filename = c['color-profile'].strip ()
-    icc_data = b''
-    if icc_filename != '':
-        icc_data = open ('test-suite/%s' % icc_filename, 'rb').read ()
     expected_data = b''
+    if icc_filename != '':
+        expected_data = open ('test-suite/%s' % icc_filename, 'rb').read ()
+    icc_data = b''
     for block in reader.blocks:
         if isinstance (block, gif.ICCColorProfileExtension):
-            expected_data = block.get_icc_profile ()
+            icc_data = block.get_icc_profile ()
     if icc_data != expected_data:
         print ('  ICC Color Profile mismatch!')
         print ('  Got     : %s' % repr (icc_data))
