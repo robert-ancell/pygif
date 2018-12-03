@@ -20,7 +20,7 @@ class ReferenceImage:
         writer = png.Writer (width, height, alpha = True)
         writer.write_array (open ('test-suite/%s.png' % name, 'wb'), data)
 
-def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, force_animation = False, buffer_size = 0, comment = '', xmp_files = [], icc_files = []):
+def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, force_animation = False, buffer_size = None, comment = None, xmp_files = [], icc_files = []):
     # Add to list of tests
     test_list = open ('test-suite/TESTS').readlines ()
     line = name + '\n'
@@ -36,10 +36,14 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
         config['config']['loop-count'] = 'infinite'
     else:
         config['config']['loop-count'] = '%d' % loop_count
-    config['config']['buffer-size'] = '%d' % buffer_size
-    config['config']['comment'] = repr (comment)
-    config['config']['xmp-data'] = ','.join (xmp_files)
-    config['config']['color-profile'] = ','.join (icc_files)
+    if buffer_size is not None:
+        config['config']['buffer-size'] = '%d' % buffer_size
+    if comment is not None:
+        config['config']['comment'] = repr (comment)
+    if len (xmp_files) > 0:
+        config['config']['xmp-data'] = ','.join (xmp_files)
+    if len (icc_files) > 0:
+        config['config']['color-profile'] = ','.join (icc_files)
     def yes_or_no (value):
         if value:
             return 'yes'

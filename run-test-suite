@@ -144,6 +144,8 @@ def run_test (name):
         print ('  Expected: %s' % expected_version)
 
     def parse_string (value):
+        if value is None:
+            return None
         result = ''
         quote = value[0]
         value = value[1:]
@@ -156,8 +158,8 @@ def run_test (name):
                 value = value[1:]
         assert (value[0] == quote)
         return result
-    expected_comment = parse_string (c['comment'])
-    comment = ''
+    expected_comment = parse_string (c.get ('comment'))
+    comment = None
     for block in reader.blocks:
         if isinstance (block, gif.CommentExtension):
             comment = block.get_comment ()
@@ -188,8 +190,12 @@ def run_test (name):
         print ('  Expected: %s' % str (expected_loop_count))
         return False
 
-    expected_buffer_size = int (c['buffer-size'])
-    buffer_size = 0
+    value = c.get ('buffer-size')
+    if value is None:
+        expected_buffer_size = None
+    else:
+        expected_buffer_size = int (value)
+    buffer_size = None
     for block in reader.blocks:
         if isinstance (block, gif.NetscapeExtension):
             if block.buffer_size is not None:
@@ -203,10 +209,10 @@ def run_test (name):
         print ('  Expected: %d' % expected_buffer_size)
         return False
 
-    xmp_filename = c['xmp-data'].strip ()
+    xmp_filename = c.get ('xmp-data')
     expected_data = ''
-    if xmp_filename != '':
-        expected_data = open ('test-suite/%s' % xmp_filename).read ()
+    if xmp_filename is not None:
+        expected_data = open ('test-suite/%s' % xmp_filename.strip ()).read ()
     xmp_data = ''
     for block in reader.blocks:
         if isinstance (block, gif.XMPDataExtension):
@@ -219,10 +225,10 @@ def run_test (name):
         print (expected_data)
         return False
 
-    icc_filename = c['color-profile'].strip ()
+    icc_filename = c.get ('color-profile')
     expected_data = b''
-    if icc_filename != '':
-        expected_data = open ('test-suite/%s' % icc_filename, 'rb').read ()
+    if icc_filename is not None:
+        expected_data = open ('test-suite/%s' % icc_filename.strip (), 'rb').read ()
     icc_data = b''
     for block in reader.blocks:
         if isinstance (block, gif.ICCColorProfileExtension):
