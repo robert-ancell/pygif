@@ -304,6 +304,14 @@ encoder.feed ([ WHITE, WHITE ])
 encoder.finish (send_eoi = False)
 writer.write_trailer ()
 
+# LZW data with indexes outside the color table
+writer = make_gif ('invalid-colors', None, 1, 1, palette2, background_color = WHITE)
+writer.write_image_descriptor (0, 0, 1, 1)
+encoder = gif.LZWEncoder (writer.file, min_code_size = 12, start_with_clear = False)
+encoder.feed ([ 255 ])
+encoder.finish ()
+writer.write_trailer ()
+
 max_width = ReferenceImage ('max-width', 65535, 1, [ (255, 255, 255, 255) ] * 65535)
 max_height = ReferenceImage ('max-height', 1, 65535, [ (255, 255, 255, 255) ] * 65535)
 
