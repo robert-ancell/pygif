@@ -304,6 +304,39 @@ encoder.feed ([ WHITE, WHITE ])
 encoder.finish (send_eoi = False)
 writer.write_trailer ()
 
+pixels = []
+colors_rgba = []
+for y in range (8):
+    for x in range (8):
+        if (x + y) % 2 == 0:
+            pixels.append (WHITE)
+            colors_rgba.append ((255, 255, 255, 255))
+        else:
+            pixels.append (BLACK)
+            colors_rgba.append ((0, 0, 0, 255))
+checkerboard = ReferenceImage ('checkerboard', 8, 8, colors_rgba)
+
+# Send clear before each pixel
+writer = make_gif ('many-clears', checkerboard, 8, 8, palette8)
+writer.write_image_descriptor (0, 0, 8, 8)
+encoder = gif.LZWEncoder (writer.file, min_code_size = 3, start_with_clear = False)
+for pixel in pixels:
+    encoder.clear ()
+    encoder.feed ([ pixel ])
+encoder.finish ()
+writer.write_trailer ()
+
+# Send double clear before each pixel
+writer = make_gif ('double-clears', checkerboard, 8, 8, palette8)
+writer.write_image_descriptor (0, 0, 8, 8)
+encoder = gif.LZWEncoder (writer.file, min_code_size = 3, start_with_clear = False)
+for pixel in pixels:
+    encoder.clear ()
+    encoder.clear ()
+    encoder.feed ([ pixel ])
+encoder.finish ()
+writer.write_trailer ()
+
 # LZW data with indexes outside the color table
 writer = make_gif ('invalid-colors', None, 1, 1, palette2, background_color = WHITE)
 writer.write_image_descriptor (0, 0, 1, 1)

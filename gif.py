@@ -705,12 +705,15 @@ class LZWEncoder:
 
             # Clear when out of codes
             if self.next_code == 2 ** self.max_code_size and self.clear_on_max_width:
-                self._write_code (self.clear_code)
-                self.code_table = {}
-                for i in range (2 ** self.min_code_size):
-                    self.code_table[(i,)] = i
-                self.code_size = self.min_code_size + 1
-                self.next_code = self.eoi_code + 1
+                self.clear ()
+
+    def clear (self):
+        self._write_code (self.clear_code)
+        self.code_table = {}
+        for i in range (2 ** self.min_code_size):
+            self.code_table[(i,)] = i
+        self.code_size = self.min_code_size + 1
+        self.next_code = self.eoi_code + 1
 
     def finish (self, send_eoi = True, extra_data = None):
         # Write last code in progress
