@@ -151,6 +151,23 @@ writer.write_trailer ()
 writer = make_gif ('no-data', white_dot, 1, 1, palette2, background_color = WHITE)
 writer.write_trailer ()
 
+# Images with zero dimensions
+writer = make_gif ('zero-width', None, 0, 1, palette2, background_color = WHITE)
+writer.write_trailer ()
+writer = make_gif ('zero-height', None, 1, 0, palette2, background_color = WHITE)
+writer.write_trailer ()
+writer = make_gif ('zero-size', None, 0, 0, palette2, background_color = WHITE)
+writer.write_trailer ()
+writer = make_gif ('image-zero-width', white_dot, 1, 1, palette2, background_color = WHITE)
+writer.write_image_descriptor (0, 0, 0, 1, depth = 1)
+writer.write_trailer ()
+writer = make_gif ('image-zero-height', white_dot, 1, 1, palette2, background_color = WHITE)
+writer.write_image_descriptor (0, 0, 1, 0, 1, depth = 1)
+writer.write_trailer ()
+writer = make_gif ('image-zero-size', white_dot, 1, 1, palette2, background_color = WHITE)
+writer.write_image_descriptor (0, 0, 0, 0, 1, depth = 1)
+writer.write_trailer ()
+
 # Image with invalid background value
 writer = make_gif ('invalid-background', white_dot, 1, 1, palette2, background_color = 255)
 writer.write_image (1, 1, 2, [ WHITE ])
