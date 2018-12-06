@@ -402,7 +402,6 @@ class LZWDecoder:
         # Codes and values to output
         self.codes = []
         self.values = []
-        self.n_used = 0
 
         # Code table
         self.clear_code = 2 ** (min_code_size - 1)
@@ -424,7 +423,6 @@ class LZWDecoder:
             length = len (data) - offset
         for i in range (offset, offset + length):
             d = data[i]
-            self.n_used += 1
             n_available = 8
             while n_available > 0:
                 # Number of bits to get
