@@ -32,6 +32,8 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
     config = configparser.ConfigParser ()
     config['config'] = { 'input': '%s.gif' % name }
     config['config']['version'] = version.decode ('ascii')
+    config['config']['width'] = '%d' % width
+    config['config']['height'] = '%d' % height
     if loop_count < 0:
         config['config']['loop-count'] = 'infinite'
     else:
@@ -63,9 +65,7 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
             delay = 0
         id = 'frame%d' % i
         frames.append (id)
-        config[id] = { 'width': '%d' % image.width,
-                       'height': '%d' % image.height,
-                       'pixels': image.filename }
+        config[id] = { 'pixels': image.filename }
         if delay > 0:
             config[id]['delay'] = '%d' % delay
     config['config']['frames'] = ','.join (frames)

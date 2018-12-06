@@ -105,6 +105,9 @@ def render (reader):
 
 def compare_to_reference_frame (reader, pixels, filename):
     r_pixels = open (filename, 'rb').read ()
+    if len (pixels) != len (r_pixels):
+        print ('  Pixel length mismatch! Got %s, expected %s' % (len (r_pixels), len (pixels)))
+        return False
     for y in range (reader.height):
         for x in range (reader.width):
             color = get_pixel (reader, pixels, x, y)
@@ -142,6 +145,12 @@ def run_test (name):
         print ('  Version mismatch!')
         print ('  Got     : %s' % reader.version)
         print ('  Expected: %s' % expected_version)
+
+    expected_width = int (c['width'])
+    expected_height = int (c['height'])
+    if (expected_width, expected_height) != (reader.width, reader.height):
+        print ('  Size mismatch! Got %dx%d, expected %dx%d' % (reader.width, reader.height, expected_width, expected_height))
+        return False
 
     def parse_string (value):
         if value is None:
@@ -250,11 +259,6 @@ def run_test (name):
 
     frame = frames[-1]
     reference_filename = 'test-suite/%s' % frame['pixels']
-    expected_width = int (frame['width'])
-    expected_height = int (frame['height'])
-    if (expected_width, expected_height) != (reader.width, reader.height):
-        print ('  Size mismatch! Got %dx%d, expected %dx%d' % (reader.width, reader.height, expected_width, expected_height))
-        return False
 
     print ('  Comparing to %s' % reference_filename)
     return compare_to_reference_frame (reader, pixels, reference_filename)
