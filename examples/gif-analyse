@@ -29,7 +29,7 @@ def get_color (color_table, index):
 
 def color_table_to_string (color_table):
     colors = []
-    for color in r.color_table:
+    for color in color_table:
         colors.append (color_to_string (color))
     return ', '.join (colors)
 
