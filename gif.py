@@ -678,10 +678,10 @@ class LZWEncoder:
         self.code = tuple ()
         self.code_size = self.min_code_size + 1
 
+        self.file.write (struct.pack ('B', self.min_code_size))
+
         if start_with_clear:
             self._write_code (self.clear_code)
-
-        self.file.write (struct.pack ('B', self.min_code_size))
 
     def feed (self, values):
         for value in values:
