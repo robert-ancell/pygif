@@ -34,6 +34,9 @@ def make_gif (name, result, width, height, colors = [], background_color = 0, ve
     config['config']['version'] = version.decode ('ascii')
     config['config']['width'] = '%d' % width
     config['config']['height'] = '%d' % height
+    if background_color < len (colors):
+        (red, green, blue) = colors[background_color]
+        config['config']['background'] = '#%02x%02x%02x' % (red, green, blue)
     if loop_count < 0:
         config['config']['loop-count'] = 'infinite'
     else:
@@ -147,8 +150,10 @@ writer = make_gif ('no-global-color-table', white_dot, 1, 1)
 writer.write_image (1, 1, 1, [1], colors = [(0, 0, 255), (255, 255, 255)])
 writer.write_trailer ()
 
+transparent_dot = ReferenceImage ('transparent-dot', 1, 1, [ (0, 0, 0, 0) ])
+
 # Image with no data (just shows background)
-writer = make_gif ('no-data', white_dot, 1, 1, palette2, background_color = WHITE)
+writer = make_gif ('no-data', transparent_dot, 1, 1, palette2, background_color = WHITE)
 writer.write_trailer ()
 
 # Images with zero dimensions
@@ -158,13 +163,13 @@ writer = make_gif ('zero-height', None, 1, 0, palette2, background_color = WHITE
 writer.write_trailer ()
 writer = make_gif ('zero-size', None, 0, 0, palette2, background_color = WHITE)
 writer.write_trailer ()
-writer = make_gif ('image-zero-width', white_dot, 1, 1, palette2, background_color = WHITE)
+writer = make_gif ('image-zero-width', transparent_dot, 1, 1, palette2, background_color = WHITE)
 writer.write_image_descriptor (0, 0, 0, 1, depth = 1)
 writer.write_trailer ()
-writer = make_gif ('image-zero-height', white_dot, 1, 1, palette2, background_color = WHITE)
+writer = make_gif ('image-zero-height', transparent_dot, 1, 1, palette2, background_color = WHITE)
 writer.write_image_descriptor (0, 0, 1, 0, 1, depth = 1)
 writer.write_trailer ()
-writer = make_gif ('image-zero-size', white_dot, 1, 1, palette2, background_color = WHITE)
+writer = make_gif ('image-zero-size', transparent_dot, 1, 1, palette2, background_color = WHITE)
 writer.write_image_descriptor (0, 0, 0, 0, 1, depth = 1)
 writer.write_trailer ()
 
@@ -222,9 +227,9 @@ writer = make_gif ('interlace', all_reds, 16, 16, colors)
 writer.write_image (16, 16, 8, pixels, interlace = True)
 writer.write_trailer ()
 
-image_inside_bg = ReferenceImage ('image-inside-bg', 2, 2, [ (255, 0, 0, 255), (255, 255, 255, 255), (255, 255, 255, 255), (255, 255, 255, 255)])
-image_overlap_bg = ReferenceImage ('image-overlap-bg', 2, 2, [ (255, 255, 255, 255), (255, 255, 255, 255), (255, 255, 255, 255), (255, 0, 0, 255)])
-image_outside_bg = ReferenceImage ('image-outside-bg', 2, 2, [ (255, 255, 255, 255), (255, 255, 255, 255), (255, 255, 255, 255), (255, 255, 255, 255) ])
+image_inside_bg = ReferenceImage ('image-inside-bg', 2, 2, [ (255, 0, 0, 255), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0)])
+image_overlap_bg = ReferenceImage ('image-overlap-bg', 2, 2, [ (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (255, 0, 0, 255)])
+image_outside_bg = ReferenceImage ('image-outside-bg', 2, 2, [ (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0) ])
 
 # Images that don't fully cover the background
 writer = make_gif ('image-inside-bg', image_inside_bg, 2, 2, palette8, background_color = WHITE)
@@ -278,7 +283,7 @@ writer.write_image (16, 16, 8, pixels, left = 0, top = 16, colors = colors2)
 writer.write_image (16, 16, 8, pixels, left = 16, top = 16, colors = colors3)
 writer.write_trailer ()
 
-missing_pixels = ReferenceImage ('missing-pixels', 2, 2, [ (255, 255, 255, 255), (0, 0, 0, 255), (0, 0, 0, 255), (0, 0, 0, 255) ])
+missing_pixels = ReferenceImage ('missing-pixels', 2, 2, [ (255, 255, 255, 255), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0) ])
 
 # Image with missing pixels
 writer = make_gif ('missing-pixels', missing_pixels, 2, 2, palette8)

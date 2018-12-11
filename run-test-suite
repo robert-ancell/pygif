@@ -71,7 +71,7 @@ def dispose_block (reader, pixels, block, method, previous_pixels):
 def render (reader):
     # Fill background
     pixels = array.array ('B')
-    color = get_color (reader.color_table, reader.background_color)
+    color = (0, 0, 0, 0)
     for y in range (reader.height):
         for x in range (reader.width):
             (red, green, blue, alpha) = color
@@ -157,6 +157,8 @@ def run_test (name):
             return None
         result = ''
         quote = value[0]
+        if not quote in ("'", '"'):
+            return value
         value = value[1:]
         while len (value) > 1:
             if value.startswith ('\\x'):
@@ -167,6 +169,19 @@ def run_test (name):
                 value = value[1:]
         assert (value[0] == quote)
         return result
+
+    expected_background = parse_string (c.get ('background'))
+    if reader.background_color < len (reader.color_table):
+        (red, green, blue) = reader.color_table[reader.background_color]
+        background = '#%02x%02x%02x' % (red, green, blue)
+    else:
+        background = None
+    if background != expected_background:
+        print ('  Background mismatch!')
+        print ('  Got     : %s' % repr (background))
+        print ('  Expected: %s' % repr (expected_background))
+        return False
+
     expected_comment = parse_string (c.get ('comment'))
     comment = None
     for block in reader.blocks:
