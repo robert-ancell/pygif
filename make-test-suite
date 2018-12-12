@@ -359,6 +359,12 @@ for pixel in pixels:
 encoder.finish ()
 writer.write_trailer ()
 
+# LZW data with a code outside the valid range
+writer = make_gif ('invalid-code', None, 2, 2, palette2)
+writer.write_image_descriptor (0, 0, 2, 2)
+writer.file.write (b'\x02' + b'\x02\xff\xff' + b'\x00')
+writer.write_trailer ()
+
 # LZW data with indexes outside the color table
 writer = make_gif ('invalid-colors', None, 1, 1, palette2, background_color = WHITE)
 writer.write_image_descriptor (0, 0, 1, 1)

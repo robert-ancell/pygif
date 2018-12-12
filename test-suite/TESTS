@@ -35,6 +35,7 @@ no-eoi
 no-clear-and-eoi
 many-clears
 double-clears
+invalid-code
 invalid-colors
 max-width
 max-height
