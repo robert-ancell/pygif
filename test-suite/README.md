@@ -26,3 +26,6 @@ delay = 5                # Expected delay after this frame in 1/100 ms
 [frame1]
 pixels = foo1.rgba       # Expected pixel data in 8 bit RGBA format
 ```
+
+The test suite is licensed under the [Creative Commons Attribution Share-Alike license(CC-BY-SA)](https://creativecommons.org/licenses/by-sa/4.0/)
+with the intention that it can be included in your own projects that are compatible with this license.
