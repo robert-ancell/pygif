@@ -15,7 +15,7 @@ if not reader.has_screen_descriptor ():
     print ('Not a valid GIF file')
     exit (1)
 
-writer = png.Writer (reader.width, reader.height)
+writer = png.Writer (reader.width, reader.height, greyscale = False)
 
 for block in reader.blocks:
     if isinstance (block, gif.Image):
