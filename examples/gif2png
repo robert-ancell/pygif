@@ -21,7 +21,10 @@ for block in reader.blocks:
     if isinstance (block, gif.Image):
         indexes = block.get_pixels ()
         rows = []
-        row = []
+        for y in range (reader.height):
+            rows.append ([0] * reader.width * 3);
+        x = 0
+        y = 0
         for i in indexes:
             # FIXME: Transparent blocks
             if len (block.color_table) > 0:
@@ -29,12 +32,13 @@ for block in reader.blocks:
             else:
                 color = reader.color_table[i]
             (red, green, blue) = color
-            row.append (red)
-            row.append (green)
-            row.append (blue)
-            if len (row) == reader.width * 3:
-                rows.append (row)
-                row = []
-        if len (row) > 0:
-            rows.append (row)
+            rows[y][x * 3 + 0] = red
+            rows[y][x * 3 + 1] = green
+            rows[y][x * 3 + 2] = blue
+            x += 1
+            if x >= reader.width:
+                x = 0
+                y += 1
+                if y >= reader.height:
+                    break
         writer.write (open (sys.argv[2], 'wb'), rows)
