@@ -16,6 +16,9 @@ if not reader.has_screen_descriptor ():
     exit (1)
 
 writer = png.Writer (reader.width, reader.height, greyscale = False)
+rows = []
+for y in range (reader.height):
+  rows.append ([0] * reader.width * 3);
 
 transparent_color = None
 for block in reader.blocks:
@@ -26,9 +29,6 @@ for block in reader.blocks:
             transparent_color = None
     elif isinstance (block, gif.Image):
         indexes = block.get_pixels ()
-        rows = []
-        for y in range (reader.height):
-            rows.append ([0] * reader.width * 3);
         x = 0
         y = 0
         for i in indexes:
@@ -47,4 +47,5 @@ for block in reader.blocks:
                 y += 1
                 if y >= reader.height:
                     break
-        writer.write (open (sys.argv[2], 'wb'), rows)
+
+writer.write (open (sys.argv[2], 'wb'), rows)
