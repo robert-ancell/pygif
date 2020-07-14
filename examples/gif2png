@@ -17,8 +17,14 @@ if not reader.has_screen_descriptor ():
 
 writer = png.Writer (reader.width, reader.height, greyscale = False)
 
+transparent_color = None
 for block in reader.blocks:
-    if isinstance (block, gif.Image):
+    if isinstance (block, gif.GraphicControlExtension):
+        if block.has_transparent:
+            transparent_color = block.transparent_color
+        else:
+            transparent_color = None
+    elif isinstance (block, gif.Image):
         indexes = block.get_pixels ()
         rows = []
         for y in range (reader.height):
@@ -26,15 +32,15 @@ for block in reader.blocks:
         x = 0
         y = 0
         for i in indexes:
-            # FIXME: Transparent blocks
             if len (block.color_table) > 0:
                 color = block.color_table[i]
             else:
                 color = reader.color_table[i]
             (red, green, blue) = color
-            rows[y][x * 3 + 0] = red
-            rows[y][x * 3 + 1] = green
-            rows[y][x * 3 + 2] = blue
+            if i != transparent_color:
+                rows[y][x * 3 + 0] = red
+                rows[y][x * 3 + 1] = green
+                rows[y][x * 3 + 2] = blue
             x += 1
             if x >= reader.width:
                 x = 0
