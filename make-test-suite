@@ -457,6 +457,11 @@ writer.write_graphic_control_extension (has_transparent = False, transparent_col
 writer.write_image (2, 2, 3, [ RED, GREEN, BLUE, WHITE ])
 writer.write_trailer ()
 
+# Check that color 0 is not defaulting to transparent.
+writer = make_gif ('unset-transparent', white_dot, 1, 1, [(255, 255, 255), (0, 0, 0)], background_color = 1)
+writer.write_image (1, 1, 2, [ 0 ])
+writer.write_trailer ()
+
 # Loops
 writer = make_gif ('loop-infinite', white_dot, 1, 1, palette8, loop_count = -1)
 writer.write_netscape_extension (loop_count = 0)

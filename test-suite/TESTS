@@ -48,6 +48,7 @@ max-codes
 transparent
 invalid-transparent
 disabled-transparent
+unset-transparent
 loop-infinite
 loop-once
 loop-max
