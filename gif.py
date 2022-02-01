@@ -661,6 +661,8 @@ class LZWEncoder:
         self.max_code_size = max_code_size
         self.clear_on_max_width = clear_on_max_width
 
+        assert (self.min_code_size < self.max_code_size)
+
         # Data being output
         self.data = b''
         self.octet = 0x00
