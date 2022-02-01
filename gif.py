@@ -399,6 +399,8 @@ def _get_subblocks (data, offset):
 
 class LZWDecoder:
     def __init__ (self, min_code_size = 2, max_code_size = 12):
+        assert (min_code_size < max_code_size)
+
         self.min_code_size = min_code_size
         self.max_code_size = max_code_size
 
