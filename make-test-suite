@@ -17,7 +17,7 @@ class ReferenceImage:
         for (red, green, blue, alpha) in pixels:
             data += struct.pack ('BBBB', red, green, blue, alpha)
         file.write (data)
-        writer = png.Writer (width, height, alpha = True)
+        writer = png.Writer (width, height, alpha = True, greyscale = False)
         writer.write_array (open ('test-suite/%s.png' % name, 'wb'), data)
 
 def make_gif (name, result, width, height, colors = [], background_color = 0, version = gif.Version.GIF89a, loop_count = 0, force_animation = False, buffer_size = None, comment = None, xmp_files = [], icc_files = []):
