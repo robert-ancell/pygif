@@ -430,11 +430,25 @@ encoder = gif.LZWEncoder (writer.file, min_code_size = 7)
 encoder.feed (pixels)
 encoder.finish ()
 writer.write_trailer ()
+
+# Use the maximum supported code size
 writer = make_gif ('max-codes', random_image, random_width, random_height, palette16)
 writer.write_image_descriptor (0, 0, random_width, random_height)
 encoder = gif.LZWEncoder (writer.file, min_code_size = 11)
 encoder.feed (pixels)
 encoder.finish ()
+writer.write_trailer ()
+
+# Use a code size of 12 (overflows max size by one).
+writer = make_gif ('overflow-codes', None, 2, 2, palette2)
+writer.write_image_descriptor (0, 0, 2, 2)
+writer.file.write (b'\x0c' + b'\x02\x10\x01' + b'\x00')
+writer.write_trailer ()
+
+# Use a code size of 255 (maximum storable value, exceeds max size).
+writer = make_gif ('overflow-codes-max', None, 2, 2, palette2)
+writer.write_image_descriptor (0, 0, 2, 2)
+writer.file.write (b'\xff' + b'\x20\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01' + b'\x00')
 writer.write_trailer ()
 
 four_colors_transparent = ReferenceImage ('four-colors-transparent', 2, 2, [ (0, 0, 0, 0),  (0, 255, 0, 255), (0, 0, 255, 255), (255, 255, 255, 255) ])
