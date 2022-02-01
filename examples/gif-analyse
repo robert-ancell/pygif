@@ -79,9 +79,9 @@ for block in r.blocks:
             description += ', interlace'
         if clear_count > 0:
             description += ', n-clears=%d' % clear_count
-        if decoder.codes[0] != decoder.clear_code:
+        if len(decoder.codes) > 0 and decoder.codes[0] != decoder.clear_code:
             description += ', no-clear-at-start'
-        if decoder.codes[-1] != decoder.eoi_code:
+        if len(decoder.codes) > 0 and decoder.codes[-1] != decoder.eoi_code:
             description += ', no-end-of-information'
         print ('  Pixels (%s): %s' % (description, decoder.values))
         lzw_data = block.get_lzw_data ()
