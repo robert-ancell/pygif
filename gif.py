@@ -90,6 +90,9 @@ class Image (Block):
     def decode_lzw (self):
         offset = self.offset + 10 + len (self.color_table) * 3 + 1
         (subblock_offsets, _) = _get_subblocks (self.reader.buffer, offset)
+        if self.lzw_min_code_size >= 12:
+            print ('Image has invalid code size of %d' % self.lzw_min_code_size)
+            return LZWDecoder ()
         decoder = LZWDecoder (self.lzw_min_code_size)
         for (offset, length) in subblock_offsets:
             decoder.feed (self.reader.buffer, offset, length)
