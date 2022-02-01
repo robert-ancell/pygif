@@ -304,7 +304,7 @@ class Reader:
                         (red, green, blue) = struct.unpack ('BBB', self.buffer[offset: offset + 3])
                         color_table.append ((red, green, blue))
 
-                block = Image (self, block_start, block_length, left, top, width, height, color_table, color_table_sorted, interlace, lzw_min_code_size + 1)
+                block = Image (self, block_start, block_length, left, top, width, height, color_table, color_table_sorted, interlace, lzw_min_code_size)
                 self.blocks.append (block)
 
             # Extension
@@ -395,7 +395,7 @@ def _get_subblocks (data, offset):
             return (None, 0)
 
 class LZWDecoder:
-    def __init__ (self, min_code_size = 3, max_code_size = 12):
+    def __init__ (self, min_code_size = 2, max_code_size = 12):
         self.min_code_size = min_code_size
         self.max_code_size = max_code_size
 
@@ -405,19 +405,19 @@ class LZWDecoder:
         self.n_used = 0
 
         # Code table
-        self.clear_code = 2 ** (min_code_size - 1)
+        self.clear_code = 2 ** min_code_size
         self.eoi_code = self.clear_code + 1
         self.code_table = []
-        for i in range (2 ** (min_code_size - 1)):
+        for i in range (2 ** min_code_size):
             self.code_table.append ((i,))
         self.code_table.append (self.clear_code)
         self.code_table.append (self.eoi_code)
 
         # Code currently being decoded
-        self.code = 0                       # Current bits of code
-        self.code_bits = 0                  # Current number of bits
-        self.code_size = self.min_code_size # Required number of bits
-        self.last_code = self.clear_code    # Previous code processed
+        self.code = 0                           # Current bits of code
+        self.code_bits = 0                      # Current number of bits
+        self.code_size = self.min_code_size + 1 # Required number of bits
+        self.last_code = self.clear_code        # Previous code processed
 
     def feed (self, data, offset = 0, length = -1):
         if length < 0:
@@ -453,7 +453,7 @@ class LZWDecoder:
 
                 # Reset code table on clear
                 if code == self.clear_code:
-                    self.code_size = self.min_code_size
+                    self.code_size = self.min_code_size + 1
                     self.code_table = self.code_table[:self.eoi_code + 1]
                     self.last_code = code
                     continue
