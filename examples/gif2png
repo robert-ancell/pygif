@@ -21,13 +21,18 @@ for y in range (reader.height):
   rows.append ([0] * reader.width * 3);
 
 transparent_color = None
+have_image = False
 for block in reader.blocks:
     if isinstance (block, gif.GraphicControlExtension):
         if block.has_transparent:
             transparent_color = block.transparent_color
         else:
             transparent_color = None
+	# Only render the first frame
+        if have_image and block.delay_time > 0:
+            break
     elif isinstance (block, gif.Image):
+        have_image = True
         indexes = block.get_pixels ()
         x = block.left
         y = block.top
