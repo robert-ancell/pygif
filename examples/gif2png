@@ -29,8 +29,8 @@ for block in reader.blocks:
             transparent_color = None
     elif isinstance (block, gif.Image):
         indexes = block.get_pixels ()
-        x = 0
-        y = 0
+        x = block.left
+        y = block.top
         for i in indexes:
             if len (block.color_table) > 0:
                 color = block.color_table[i]
@@ -42,10 +42,10 @@ for block in reader.blocks:
                 rows[y][x * 3 + 1] = green
                 rows[y][x * 3 + 2] = blue
             x += 1
-            if x >= reader.width:
-                x = 0
+            if x >= block.left + block.width:
+                x = block.left
                 y += 1
-                if y >= reader.height:
+                if y >= block.top + block.height:
                     break
 
 writer.write (open (sys.argv[2], 'wb'), rows)
