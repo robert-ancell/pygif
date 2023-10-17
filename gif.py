@@ -168,9 +168,9 @@ def _decode_animation_subblocks (block):
     for subblock in block.get_subblocks ()[1:]:
         id = subblock[0]
         if id == 1 and len (subblock) == 3:
-            (loop_count,) = struct.unpack ('<xH', subblock)
+            (_, loop_count,) = struct.unpack ('<bH', subblock)
         elif id == 2 and len (subblock) == 5:
-            (buffer_size,) = struct.unpack ('<xI', subblock)
+            (_, buffer_size,) = struct.unpack ('<bI', subblock)
         else:
             unused_subblocks.append ((id, subblock[1:]))
     return (loop_count, buffer_size, unused_subblocks)
