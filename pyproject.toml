@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pygif"
+version = "0.4"
+authors = [
+  { name="Robert Ancell", email="robert.ancell@gmail.com" },
+]
+description = "Pure Python GIF image encoder/decoder"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "Operating System :: OS Independent",
+]
+license = "LGPL-3.0"
+license-files = ["LICENSE"]
+
+[project.urls]
+Homepage = "https://github.com/robert-ancell/pygif"
+Issues = "https://github.com/robert-ancell/pygif/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gif"]
