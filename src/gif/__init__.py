@@ -39,5 +39,6 @@ __all__ = [
     "Trailer",
     "UnknownBlock",
     "Version",
+    "Writer",
     "XMPDataExtension",
 ]
