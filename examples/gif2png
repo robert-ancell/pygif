@@ -1,43 +1,45 @@
 #!/usr/bin/python3
 
-import png
-import gif
 import sys
 
-if len (sys.argv) < 3:
-    print ('Usage: gif2png [input.gif] [output.png]')
-    exit (1)
+import png
 
-reader = gif.Reader ()
-reader.feed (open (sys.argv[1], 'rb').read ())
+import gif
 
-if not reader.has_screen_descriptor ():
-    print ('Not a valid GIF file')
-    exit (1)
+if len(sys.argv) < 3:
+    print("Usage: gif2png [input.gif] [output.png]")
+    exit(1)
 
-writer = png.Writer (reader.width, reader.height, greyscale = False)
+reader = gif.Reader()
+reader.feed(open(sys.argv[1], "rb").read())
+
+if not reader.has_screen_descriptor():
+    print("Not a valid GIF file")
+    exit(1)
+
+writer = png.Writer(reader.width, reader.height, greyscale=False)
 rows = []
-for y in range (reader.height):
-  rows.append ([0] * reader.width * 3);
+for y in range(reader.height):
+    rows.append([0] * reader.width * 3)
 
 transparent_color = None
 have_image = False
 for block in reader.blocks:
-    if isinstance (block, gif.GraphicControlExtension):
+    if isinstance(block, gif.GraphicControlExtension):
         if block.has_transparent:
             transparent_color = block.transparent_color
         else:
             transparent_color = None
-	# Only render the first frame
+        # Only render the first frame
         if have_image and block.delay_time > 0:
             break
-    elif isinstance (block, gif.Image):
+    elif isinstance(block, gif.Image):
         have_image = True
-        indexes = block.get_pixels ()
+        indexes = block.get_pixels()
         x = block.left
         y = block.top
         for i in indexes:
-            if len (block.color_table) > 0:
+            if len(block.color_table) > 0:
                 color = block.color_table[i]
             else:
                 color = reader.color_table[i]
@@ -53,4 +55,4 @@ for block in reader.blocks:
                 if y >= block.top + block.height:
                     break
 
-writer.write (open (sys.argv[2], 'wb'), rows)
+writer.write(open(sys.argv[2], "wb"), rows)
