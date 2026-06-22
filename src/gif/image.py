@@ -184,7 +184,7 @@ class ApplicationExtension(Extension):
         self.identifier = identifier
         self.authentication_code = authentication_code
 
-    def get_data(self):
+    def get_application_data(self):
         return self.get_subblocks()[1:]
 
 

@@ -162,7 +162,7 @@ for block in r.blocks:
         print("Application Extension:")
         print("  Application Identifier: %s" % repr(block.identifier))
         print("  Application Authentication Code: %s" % repr(block.authentication_code))
-        for block in block.get_data():
+        for block in block.get_application_data():
             print("  Data: %s" % repr(block))
 
     elif isinstance(block, gif.Extension):
