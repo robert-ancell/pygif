@@ -147,7 +147,7 @@ class Reader:
 
                 self.blocks.append(
                     Image(
-                        self,
+                        self.buffer,
                         block_start,
                         block_length,
                         left,
@@ -194,7 +194,7 @@ class Reader:
                         background_color,
                     ) = struct.unpack("<HHHHBBBB", first_subblock)
                     block: Block = PlainTextExtension(
-                        self,
+                        self.buffer,
                         block_start,
                         block_length,
                         left,
@@ -216,7 +216,7 @@ class Reader:
                     user_input = flags & 0x02 != 0
                     has_transparent = flags & 0x01 != 0
                     block = GraphicControlExtension(
-                        self,
+                        self.buffer,
                         block_start,
                         block_length,
                         disposal_method,
@@ -226,39 +226,43 @@ class Reader:
                         transparent_color,
                     )
                 elif label == ExtensionLabel.COMMENT:
-                    block = CommentExtension(self, block_start, block_length)
+                    block = CommentExtension(self.buffer, block_start, block_length)
                 elif label == ExtensionLabel.APPLICATION and len(first_subblock) == 11:
                     identifier = first_subblock[:8].decode("ascii")
                     authentication_code = first_subblock[8:11].decode("ascii")
                     if identifier == "NETSCAPE" and authentication_code == "2.0":
-                        block = NetscapeExtension(self, block_start, block_length)
+                        block = NetscapeExtension(
+                            self.buffer, block_start, block_length
+                        )
                     elif identifier == "ANIMEXTS" and authentication_code == "1.0":
-                        block = AnimationExtension(self, block_start, block_length)
+                        block = AnimationExtension(
+                            self.buffer, block_start, block_length
+                        )
                     elif identifier == "XMP Data" and authentication_code == "XMP":
-                        block = XMPDataExtension(self, block_start, block_length)
+                        block = XMPDataExtension(self.buffer, block_start, block_length)
                     elif identifier == "ICCRGBG1" and authentication_code == "012":
                         block = ICCColorProfileExtension(
-                            self, block_start, block_length
+                            self.buffer, block_start, block_length
                         )
                     else:
                         block = ApplicationExtension(
-                            self,
+                            self.buffer,
                             block_start,
                             block_length,
                             identifier,
                             authentication_code,
                         )
                 else:
-                    block = Extension(self, block_start, block_length, label)
+                    block = Extension(self.buffer, block_start, block_length, label)
                 self.blocks.append(block)
 
             # Trailer
             elif block_type == BlockType.TRAILER:
-                self.blocks.append(Trailer(self, block_start, 1))
+                self.blocks.append(Trailer(self.buffer, block_start, 1))
                 return
 
             else:
-                self.blocks.append(UnknownBlock(self, block_start, block_type))
+                self.blocks.append(UnknownBlock(self.buffer, block_start, block_type))
                 return
 
     def has_header(self) -> bool:

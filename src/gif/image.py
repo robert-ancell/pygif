@@ -43,19 +43,19 @@ class BlockType:
 
 
 class Block:
-    def __init__(self, reader, offset: int, length: int) -> None:
-        self.reader = reader
+    def __init__(self, data: bytes, offset: int, length: int) -> None:
+        self.data = data
         self.offset = offset
         self.length = length
 
     def get_data(self) -> bytes:
-        return self.reader.buffer[self.offset : self.offset + self.length]
+        return self.data[self.offset : self.offset + self.length]
 
 
 class Image(Block):
     def __init__(
         self,
-        reader,
+        data: bytes,
         offset: int,
         length: int,
         left: int,
@@ -67,7 +67,7 @@ class Image(Block):
         interlace: bool,
         lzw_min_code_size: int,
     ) -> None:
-        Block.__init__(self, reader, offset, length)
+        Block.__init__(self, data, offset, length)
         self.left = left
         self.top = top
         self.width = width
@@ -79,21 +79,21 @@ class Image(Block):
 
     def get_lzw_data(self):
         offset = self.offset + 10 + len(self.color_table) * 3 + 1
-        (subblock_offsets, _) = _get_subblocks(self.reader.buffer, offset)
+        (subblock_offsets, _) = _get_subblocks(self.data, offset)
         data = b""
         for offset, length in subblock_offsets:
-            data += self.reader.buffer[offset : offset + length]
+            data += self.data[offset : offset + length]
         return data
 
     def decode_lzw(self) -> LZWDecoder:
         offset = self.offset + 10 + len(self.color_table) * 3 + 1
-        (subblock_offsets, _) = _get_subblocks(self.reader.buffer, offset)
+        (subblock_offsets, _) = _get_subblocks(self.data, offset)
         if self.lzw_min_code_size >= 12:
             print("Image has invalid code size of %d" % self.lzw_min_code_size)
             return LZWDecoder()
         decoder = LZWDecoder(self.lzw_min_code_size)
         for offset, length in subblock_offsets:
-            decoder.feed(self.reader.buffer, offset, length)
+            decoder.feed(self.data, offset, length)
         return decoder
 
     def get_pixels(self) -> list[int]:
@@ -101,24 +101,24 @@ class Image(Block):
 
 
 class Extension(Block):
-    def __init__(self, reader, offset: int, length: int, label: int) -> None:
-        Block.__init__(self, reader, offset, length)
+    def __init__(self, data: bytes, offset: int, length: int, label: int) -> None:
+        Block.__init__(self, data, offset, length)
         self.label = label
 
     def get_subblocks(self) -> list[bytes]:
-        (subblock_offsets, _) = _get_subblocks(self.reader.buffer, self.offset + 2)
+        (subblock_offsets, _) = _get_subblocks(self.data, self.offset + 2)
         if subblock_offsets is None:
             return []
         subblocks = []
         for offset, length in subblock_offsets:
-            subblocks.append(self.reader.buffer[offset : offset + length])
+            subblocks.append(self.data[offset : offset + length])
         return subblocks
 
 
 class PlainTextExtension(Extension):
     def __init__(
         self,
-        reader,
+        data: bytes,
         offset: int,
         length: int,
         left: int,
@@ -130,7 +130,7 @@ class PlainTextExtension(Extension):
         foreground_color: int,
         background_color: int,
     ) -> None:
-        Extension.__init__(self, reader, offset, length, ExtensionLabel.PLAIN_TEXT)
+        Extension.__init__(self, data, offset, length, ExtensionLabel.PLAIN_TEXT)
         self.left = left
         self.top = top
         self.width = width
@@ -150,7 +150,7 @@ class PlainTextExtension(Extension):
 class GraphicControlExtension(Extension):
     def __init__(
         self,
-        reader,
+        data: bytes,
         offset: int,
         length: int,
         disposal_method,
@@ -159,7 +159,7 @@ class GraphicControlExtension(Extension):
         has_transparent,
         transparent_color,
     ) -> None:
-        Extension.__init__(self, reader, offset, length, ExtensionLabel.GRAPHIC_CONTROL)
+        Extension.__init__(self, data, offset, length, ExtensionLabel.GRAPHIC_CONTROL)
         self.disposal_method = disposal_method
         self.delay_time = delay_time
         self.user_input = user_input
@@ -168,8 +168,8 @@ class GraphicControlExtension(Extension):
 
 
 class CommentExtension(Extension):
-    def __init__(self, reader, offset: int, length: int) -> None:
-        Extension.__init__(self, reader, offset, length, ExtensionLabel.COMMENT)
+    def __init__(self, data: bytes, offset: int, length: int) -> None:
+        Extension.__init__(self, data, offset, length, ExtensionLabel.COMMENT)
 
     def get_comment(self, encoding: str = "utf-8") -> str:
         data = b""
@@ -181,13 +181,13 @@ class CommentExtension(Extension):
 class ApplicationExtension(Extension):
     def __init__(
         self,
-        reader,
+        data: bytes,
         offset: int,
         length: int,
         identifier: str,
         authentication_code: str,
     ) -> None:
-        Extension.__init__(self, reader, offset, length, ExtensionLabel.APPLICATION)
+        Extension.__init__(self, data, offset, length, ExtensionLabel.APPLICATION)
         self.identifier = identifier
         self.authentication_code = authentication_code
 
@@ -219,37 +219,37 @@ def _decode_animation_subblocks(
 
 
 class NetscapeExtension(ApplicationExtension):
-    def __init__(self, reader, offset: int, length: int) -> None:
-        ApplicationExtension.__init__(self, reader, offset, length, "NETSCAPE", "2.0")
+    def __init__(self, data: bytes, offset: int, length: int) -> None:
+        ApplicationExtension.__init__(self, data, offset, length, "NETSCAPE", "2.0")
         (self.loop_count, self.buffer_size, self.unused_subblocks) = (
             _decode_animation_subblocks(self)
         )
 
 
 class AnimationExtension(ApplicationExtension):
-    def __init__(self, reader, offset: int, length: int) -> None:
-        ApplicationExtension.__init__(self, reader, offset, length, "ANIMEXTS", "1.0")
+    def __init__(self, data: bytes, offset: int, length: int) -> None:
+        ApplicationExtension.__init__(self, data, offset, length, "ANIMEXTS", "1.0")
         (self.loop_count, self.buffer_size, self.unused_subblocks) = (
             _decode_animation_subblocks(self)
         )
 
 
 class XMPDataExtension(ApplicationExtension):
-    def __init__(self, reader, offset: int, length: int) -> None:
-        ApplicationExtension.__init__(self, reader, offset, length, "XMP Data", "XMP")
+    def __init__(self, data: bytes, offset: int, length: int) -> None:
+        ApplicationExtension.__init__(self, data, offset, length, "XMP Data", "XMP")
 
     def get_metadata(self, encoding="utf-8"):
         # This extension uses a clever hack to put raw XML in the file - it uses
         # a magic suffix that turns the XML text into valid GIF blocks.
         # We just need the raw blocks without the suffix
-        return self.reader.buffer[
-            self.offset + 14 : self.offset + self.length - 258
-        ].decode(encoding)
+        return self.data[self.offset + 14 : self.offset + self.length - 258].decode(
+            encoding
+        )
 
 
 class ICCColorProfileExtension(ApplicationExtension):
-    def __init__(self, reader, offset: int, length: int) -> None:
-        ApplicationExtension.__init__(self, reader, offset, length, "ICCRGBG1", "012")
+    def __init__(self, data: bytes, offset: int, length: int) -> None:
+        ApplicationExtension.__init__(self, data, offset, length, "ICCRGBG1", "012")
 
     def get_icc_profile(self):
         data = b""
@@ -259,13 +259,13 @@ class ICCColorProfileExtension(ApplicationExtension):
 
 
 class Trailer(Block):
-    def __init__(self, reader, offset: int, length: int) -> None:
-        Block.__init__(self, reader, offset, length)
+    def __init__(self, data: bytes, offset: int, length: int) -> None:
+        Block.__init__(self, data, offset, length)
 
 
 class UnknownBlock(Block):
-    def __init__(self, reader, offset: int, block_type: int) -> None:
-        Block.__init__(self, reader, offset, 0)
+    def __init__(self, data: bytes, offset: int, block_type: int) -> None:
+        Block.__init__(self, data, offset, 0)
         self.block_type = block_type
 
 
