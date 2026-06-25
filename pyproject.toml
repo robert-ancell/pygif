@@ -4,7 +4,6 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pygif"
-version = "0.4"
 authors = [
   { name="Robert Ancell", email="robert.ancell@gmail.com" },
 ]
@@ -25,6 +24,9 @@ license-files = ["LICENSE"]
 [project.urls]
 Homepage = "https://github.com/robert-ancell/pygif"
 Issues = "https://github.com/robert-ancell/pygif/issues"
+
+[tool.hatch.version]
+path = "src/gif/__about__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gif"]
