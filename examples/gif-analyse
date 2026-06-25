@@ -19,26 +19,26 @@ if not r.has_screen_descriptor():
     exit()
 
 
-def color_to_string(color):
+def color_to_string(color: tuple[int, int, int]) -> str:
     (red, green, blue) = color
     return "#%02x%02x%02x" % (red, green, blue)
 
 
-def get_color(color_table, index):
+def get_color(color_table: list[tuple[int, int, int]], index: int) -> str:
     if 0 <= index < len(color_table):
         return color_to_string(color_table[index])
     else:
         return "INVALID"
 
 
-def color_table_to_string(color_table):
+def color_table_to_string(color_table: list[tuple[int, int, int]]) -> str:
     colors = []
     for color in color_table:
         colors.append(color_to_string(color))
     return ", ".join(colors)
 
 
-def get_disposal_method_string(disposal_method):
+def get_disposal_method_string(disposal_method: int) -> str:
     if disposal_method == 0:
         return "none"
     elif disposal_method == 1:
@@ -51,7 +51,7 @@ def get_disposal_method_string(disposal_method):
         return str(disposal_method)
 
 
-print("Version: %s" % r.version)
+print("Version: %s" % str(r.version))
 print("Size: %dx%d pixels" % (r.width, r.height))
 print("Original Depth: %d bits" % r.original_depth)
 if r.pixel_aspect_ratio != 0:
