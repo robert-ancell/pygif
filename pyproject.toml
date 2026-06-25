@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pygif"
+dynamic = ["version"]
 authors = [
   { name="Robert Ancell", email="robert.ancell@gmail.com" },
 ]
