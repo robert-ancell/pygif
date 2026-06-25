@@ -17,6 +17,7 @@ import struct
 from gif.image import (
     AnimationExtension,
     ApplicationExtension,
+    Block,
     BlockType,
     CommentExtension,
     Extension,
@@ -41,7 +42,7 @@ class Reader:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.buffer = b""
         self.version = b""
         self.width = 0
@@ -50,10 +51,10 @@ class Reader:
         self.color_table_sorted = False
         self.background_color = 0
         self.pixel_aspect_ratio = 0
-        self.color_table = []
-        self.blocks = []
+        self.color_table: list[tuple[int, int, int]] = []
+        self.blocks: list[Block] = []
 
-    def feed(self, data):
+    def feed(self, data: bytes) -> None:
         old_len = len(self.buffer)
         self.buffer += data
 
@@ -144,20 +145,21 @@ class Reader:
                         )
                         color_table.append((red, green, blue))
 
-                block = Image(
-                    self,
-                    block_start,
-                    block_length,
-                    left,
-                    top,
-                    width,
-                    height,
-                    color_table,
-                    color_table_sorted,
-                    interlace,
-                    lzw_min_code_size,
+                self.blocks.append(
+                    Image(
+                        self,
+                        block_start,
+                        block_length,
+                        left,
+                        top,
+                        width,
+                        height,
+                        color_table,
+                        color_table_sorted,
+                        interlace,
+                        lzw_min_code_size,
+                    )
                 )
-                self.blocks.append(block)
 
             # Extension
             elif block_type == BlockType.EXTENSION:
@@ -191,7 +193,7 @@ class Reader:
                         foreground_color,
                         background_color,
                     ) = struct.unpack("<HHHHBBBB", first_subblock)
-                    block = PlainTextExtension(
+                    block: Block = PlainTextExtension(
                         self,
                         block_start,
                         block_length,
@@ -259,17 +261,17 @@ class Reader:
                 self.blocks.append(UnknownBlock(self, block_start, block_type))
                 return
 
-    def has_header(self):
+    def has_header(self) -> bool:
         return len(self.buffer) >= 6
 
-    def is_gif(self):
+    def is_gif(self) -> bool:
         return self.version in [Version.GIF87a, Version.GIF89a]
 
-    def has_screen_descriptor(self):
+    def has_screen_descriptor(self) -> bool:
         return len(self.buffer) >= 13
 
-    def is_complete(self):
+    def is_complete(self) -> bool:
         return len(self.blocks) > 0 and isinstance(self.blocks[-1], Trailer)
 
-    def has_unknown_block(self):
+    def has_unknown_block(self) -> bool:
         return len(self.blocks) > 0 and isinstance(self.blocks[-1], UnknownBlock)

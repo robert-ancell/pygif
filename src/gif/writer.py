@@ -19,23 +19,23 @@ from gif.lzw import LZWEncoder
 
 
 class Writer:
-    def __init__(self, file):
+    def __init__(self, file) -> None:
         self.file = file
 
-    def write_header(self, version=Version.GIF89a):
+    def write_header(self, version: bytes = Version.GIF89a) -> None:
         self.file.write(version)
 
     def write_screen_descriptor(
         self,
-        width,
-        height,
-        has_color_table=False,
-        depth=1,
-        colors_sorted=False,
-        original_depth=8,
-        background_color=0,
-        pixel_aspect_ratio=0,
-    ):
+        width: int,
+        height: int,
+        has_color_table: bool = False,
+        depth: int = 1,
+        colors_sorted: bool = False,
+        original_depth: int = 8,
+        background_color: int = 0,
+        pixel_aspect_ratio: int = 0,
+    ) -> None:
         assert 0 <= width <= 65535
         assert 0 <= height <= 65535
         assert 1 <= depth <= 8
@@ -54,10 +54,10 @@ class Writer:
             )
         )
 
-    def write_color(self, red, green, blue):
+    def write_color(self, red: int, green: int, blue: int) -> None:
         self.file.write(struct.pack("BBB", red, green, blue))
 
-    def write_color_table(self, colors, depth):
+    def write_color_table(self, colors: list[tuple[int, int, int]], depth: int) -> None:
         assert 1 <= depth <= 8
         assert len(colors) <= 2**depth
         for red, green, blue in colors:
@@ -67,17 +67,15 @@ class Writer:
 
     def write_image(
         self,
-        width,
-        height,
-        depth,
+        width: int,
+        height: int,
+        depth: int,
         pixels,
-        left=0,
-        top=0,
-        colors=[],
-        interlace=False,
-        colors_sorted=False,
-        reserved=0,
-    ):
+        left: int = 0,
+        top: int = 0,
+        colors: list[tuple[int, int, int]] = [],
+        interlace: bool = False,
+    ) -> None:
         has_color_table = len(colors) > 0
         if has_color_table:
             color_table_size = depth
@@ -100,16 +98,16 @@ class Writer:
 
     def write_image_descriptor(
         self,
-        left,
-        top,
-        width,
-        height,
-        has_color_table=False,
-        depth=1,
-        interlace=False,
-        colors_sorted=False,
-        reserved=0,
-    ):
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        has_color_table: bool = False,
+        depth: int = 1,
+        interlace: bool = False,
+        colors_sorted: bool = False,
+        reserved: int = 0,
+    ) -> None:
         assert 0 <= width <= 65535
         assert 0 <= height <= 65535
         assert 0 <= left <= 65535
@@ -130,35 +128,35 @@ class Writer:
             struct.pack("<BHHHHB", BlockType.IMAGE, left, top, width, height, flags)
         )
 
-    def write_extension(self, label, blocks):
+    def write_extension(self, label: int, blocks: list[bytes]) -> None:
         self.write_extension_header(label)
         for block in blocks:
             self.write_extension_block(block)
         self.write_extension_trailer()
 
-    def write_extension_header(self, label):
+    def write_extension_header(self, label: int) -> None:
         self.file.write(struct.pack("BB", BlockType.EXTENSION, label))
 
-    def write_extension_block(self, block):
+    def write_extension_block(self, block: bytes) -> None:
         assert len(block) < 256
         self.file.write(struct.pack("B", len(block)))
         self.file.write(block)
 
-    def write_extension_trailer(self):
+    def write_extension_trailer(self) -> None:
         self.file.write(b"\x00")
 
     def write_plain_text_extension(
         self,
-        text,
-        left,
-        top,
-        width,
-        height,
-        cell_width,
-        cell_height,
-        foreground_color,
-        background_color,
-    ):
+        text: str,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        cell_width: int,
+        cell_height: int,
+        foreground_color: int,
+        background_color: int,
+    ) -> None:
         assert 0 <= left <= 65535
         assert 0 <= top <= 65535
         assert 0 <= width <= 65535
@@ -188,13 +186,13 @@ class Writer:
 
     def write_graphic_control_extension(
         self,
-        disposal_method=DisposalMethod.NONE,
-        delay_time=0,
-        user_input=False,
-        has_transparent=False,
-        transparent_color=0,
-        reserved=0,
-    ):
+        disposal_method: int = DisposalMethod.NONE,
+        delay_time: int = 0,
+        user_input: bool = False,
+        has_transparent: bool = False,
+        transparent_color: int = 0,
+        reserved: int = 0,
+    ) -> None:
         assert 0 <= disposal_method <= 7
         assert 0 <= reserved <= 7
         assert 0 <= delay_time <= 65535
@@ -210,7 +208,7 @@ class Writer:
         )
         self.write_extension_trailer()
 
-    def write_comment_extension(self, text):
+    def write_comment_extension(self, text: str) -> None:
         self.write_extension_header(ExtensionLabel.COMMENT)
         while len(text) > 0:
             self.write_extension_block(bytes(text[:255], "utf-8"))
@@ -218,8 +216,11 @@ class Writer:
         self.write_extension_trailer()
 
     def write_application_extension(
-        self, application_identifier, application_authentication_code, blocks
-    ):
+        self,
+        application_identifier: str,
+        application_authentication_code: str,
+        blocks: list[bytes],
+    ) -> None:
         assert len(application_identifier) == 8
         assert len(application_authentication_code) == 3
         self.write_application_extension_header(
@@ -230,14 +231,16 @@ class Writer:
         self.write_extension_trailer()
 
     def write_application_extension_header(
-        self, application_identifier, application_authentication_code
-    ):
+        self, application_identifier: str, application_authentication_code: str
+    ) -> None:
         self.write_extension_header(ExtensionLabel.APPLICATION)
         self.write_extension_block(
             bytes(application_identifier + application_authentication_code, "ascii")
         )
 
-    def write_netscape_extension(self, loop_count=-1, buffer_size=-1):
+    def write_netscape_extension(
+        self, loop_count: int = -1, buffer_size: int = -1
+    ) -> None:
         assert loop_count < 65536
         assert buffer_size < 4294967296
         self.write_application_extension_header("NETSCAPE", "2.0")
@@ -247,7 +250,9 @@ class Writer:
             self.write_extension_block(struct.pack("<BI", 2, buffer_size))
         self.write_extension_trailer()
 
-    def write_animexts_extension(self, loop_count=-1, buffer_size=-1):
+    def write_animexts_extension(
+        self, loop_count: int = -1, buffer_size: int = -1
+    ) -> None:
         assert loop_count < 65536
         self.write_application_extension_header("ANIMEXTS", "1.0")
         if loop_count >= 0:
@@ -256,7 +261,7 @@ class Writer:
             self.write_extension_block(struct.pack("<BI", 2, buffer_size))
         self.write_extension_trailer()
 
-    def write_xmp_data_extension(self, metadata):
+    def write_xmp_data_extension(self, metadata: str) -> None:
         self.write_application_extension_header("XMP Data", "XMP")
         # This extension uses a clever hack to put raw XML in the file - it uses
         # a magic suffix that turns the XML text into valid GIF blocks.
@@ -266,7 +271,7 @@ class Writer:
             self.file.write(struct.pack("B", 0xFF - i))
         self.file.write(b"\x00")
 
-    def write_icc_color_profile_extension(self, icc_profile):
+    def write_icc_color_profile_extension(self, icc_profile: bytes) -> None:
         self.write_application_extension_header("ICCRGBG1", "012")
         offset = 0
         while offset < len(icc_profile):
@@ -275,5 +280,5 @@ class Writer:
             offset += length
         self.write_extension_trailer()
 
-    def write_trailer(self):
+    def write_trailer(self) -> None:
         self.file.write(struct.pack("B", BlockType.TRAILER))

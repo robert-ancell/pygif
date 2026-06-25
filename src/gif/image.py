@@ -43,12 +43,12 @@ class BlockType:
 
 
 class Block:
-    def __init__(self, reader, offset, length):
+    def __init__(self, reader, offset: int, length: int) -> None:
         self.reader = reader
         self.offset = offset
         self.length = length
 
-    def get_data(self):
+    def get_data(self) -> bytes:
         return self.reader.buffer[self.offset : self.offset + self.length]
 
 
@@ -56,17 +56,17 @@ class Image(Block):
     def __init__(
         self,
         reader,
-        offset,
-        length,
-        left,
-        top,
-        width,
-        height,
-        color_table,
-        color_table_sorted,
-        interlace,
-        lzw_min_code_size,
-    ):
+        offset: int,
+        length: int,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        color_table: list[tuple[int, int, int]],
+        color_table_sorted: bool,
+        interlace: bool,
+        lzw_min_code_size: int,
+    ) -> None:
         Block.__init__(self, reader, offset, length)
         self.left = left
         self.top = top
@@ -85,7 +85,7 @@ class Image(Block):
             data += self.reader.buffer[offset : offset + length]
         return data
 
-    def decode_lzw(self):
+    def decode_lzw(self) -> LZWDecoder:
         offset = self.offset + 10 + len(self.color_table) * 3 + 1
         (subblock_offsets, _) = _get_subblocks(self.reader.buffer, offset)
         if self.lzw_min_code_size >= 12:
@@ -96,16 +96,16 @@ class Image(Block):
             decoder.feed(self.reader.buffer, offset, length)
         return decoder
 
-    def get_pixels(self):
+    def get_pixels(self) -> list[int]:
         return self.decode_lzw().values
 
 
 class Extension(Block):
-    def __init__(self, reader, offset, length, label):
+    def __init__(self, reader, offset: int, length: int, label: int) -> None:
         Block.__init__(self, reader, offset, length)
         self.label = label
 
-    def get_subblocks(self):
+    def get_subblocks(self) -> list[bytes]:
         (subblock_offsets, _) = _get_subblocks(self.reader.buffer, self.offset + 2)
         if subblock_offsets is None:
             return []
@@ -119,17 +119,17 @@ class PlainTextExtension(Extension):
     def __init__(
         self,
         reader,
-        offset,
-        length,
-        left,
-        top,
-        width,
-        height,
-        cell_width,
-        cell_height,
-        foreground_color,
-        background_color,
-    ):
+        offset: int,
+        length: int,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        cell_width: int,
+        cell_height: int,
+        foreground_color: int,
+        background_color: int,
+    ) -> None:
         Extension.__init__(self, reader, offset, length, ExtensionLabel.PLAIN_TEXT)
         self.left = left
         self.top = top
@@ -140,7 +140,7 @@ class PlainTextExtension(Extension):
         self.foreground_color = foreground_color
         self.background_color = background_color
 
-    def get_text(self, encoding="ascii"):
+    def get_text(self, encoding: str = "ascii") -> str:
         data = b""
         for subblock in self.get_subblocks()[1:]:
             data += subblock
@@ -151,14 +151,14 @@ class GraphicControlExtension(Extension):
     def __init__(
         self,
         reader,
-        offset,
-        length,
+        offset: int,
+        length: int,
         disposal_method,
-        delay_time,
+        delay_time: int,
         user_input,
         has_transparent,
         transparent_color,
-    ):
+    ) -> None:
         Extension.__init__(self, reader, offset, length, ExtensionLabel.GRAPHIC_CONTROL)
         self.disposal_method = disposal_method
         self.delay_time = delay_time
@@ -168,10 +168,10 @@ class GraphicControlExtension(Extension):
 
 
 class CommentExtension(Extension):
-    def __init__(self, reader, offset, length):
+    def __init__(self, reader, offset: int, length: int) -> None:
         Extension.__init__(self, reader, offset, length, ExtensionLabel.COMMENT)
 
-    def get_comment(self, encoding="utf-8"):
+    def get_comment(self, encoding: str = "utf-8") -> str:
         data = b""
         for subblock in self.get_subblocks():
             data += subblock
@@ -179,7 +179,14 @@ class CommentExtension(Extension):
 
 
 class ApplicationExtension(Extension):
-    def __init__(self, reader, offset, length, identifier, authentication_code):
+    def __init__(
+        self,
+        reader,
+        offset: int,
+        length: int,
+        identifier: str,
+        authentication_code: str,
+    ) -> None:
         Extension.__init__(self, reader, offset, length, ExtensionLabel.APPLICATION)
         self.identifier = identifier
         self.authentication_code = authentication_code
@@ -188,9 +195,11 @@ class ApplicationExtension(Extension):
         return self.get_subblocks()[1:]
 
 
-def _decode_animation_subblocks(block):
-    loop_count = None
-    buffer_size = None
+def _decode_animation_subblocks(
+    block: ApplicationExtension,
+) -> tuple[int | None, int | None, list[tuple[int, bytes]]]:
+    loop_count: int | None = None
+    buffer_size: int | None = None
     unused_subblocks = []
     for subblock in block.get_subblocks()[1:]:
         id = subblock[0]
@@ -210,7 +219,7 @@ def _decode_animation_subblocks(block):
 
 
 class NetscapeExtension(ApplicationExtension):
-    def __init__(self, reader, offset, length):
+    def __init__(self, reader, offset: int, length: int) -> None:
         ApplicationExtension.__init__(self, reader, offset, length, "NETSCAPE", "2.0")
         (self.loop_count, self.buffer_size, self.unused_subblocks) = (
             _decode_animation_subblocks(self)
@@ -218,7 +227,7 @@ class NetscapeExtension(ApplicationExtension):
 
 
 class AnimationExtension(ApplicationExtension):
-    def __init__(self, reader, offset, length):
+    def __init__(self, reader, offset: int, length: int) -> None:
         ApplicationExtension.__init__(self, reader, offset, length, "ANIMEXTS", "1.0")
         (self.loop_count, self.buffer_size, self.unused_subblocks) = (
             _decode_animation_subblocks(self)
@@ -226,7 +235,7 @@ class AnimationExtension(ApplicationExtension):
 
 
 class XMPDataExtension(ApplicationExtension):
-    def __init__(self, reader, offset, length):
+    def __init__(self, reader, offset: int, length: int) -> None:
         ApplicationExtension.__init__(self, reader, offset, length, "XMP Data", "XMP")
 
     def get_metadata(self, encoding="utf-8"):
@@ -239,7 +248,7 @@ class XMPDataExtension(ApplicationExtension):
 
 
 class ICCColorProfileExtension(ApplicationExtension):
-    def __init__(self, reader, offset, length):
+    def __init__(self, reader, offset: int, length: int) -> None:
         ApplicationExtension.__init__(self, reader, offset, length, "ICCRGBG1", "012")
 
     def get_icc_profile(self):
@@ -250,23 +259,23 @@ class ICCColorProfileExtension(ApplicationExtension):
 
 
 class Trailer(Block):
-    def __init__(self, reader, offset, length):
+    def __init__(self, reader, offset: int, length: int) -> None:
         Block.__init__(self, reader, offset, length)
 
 
 class UnknownBlock(Block):
-    def __init__(self, reader, offset, block_type):
+    def __init__(self, reader, offset: int, block_type: int) -> None:
         Block.__init__(self, reader, offset, 0)
         self.block_type = block_type
 
 
-def _get_subblocks(data, offset):
+def _get_subblocks(data, offset: int) -> tuple[list[tuple[int, int]], int]:
     n_required = 0
     n_available = len(data) - offset
-    subblocks = []
+    subblocks: list[tuple[int, int]] = []
     while True:
         if n_available < n_required + 1:
-            return (None, 0)
+            raise ValueError("Insufficient data for subblock size")
         subblock_size = data[offset + n_required]
         n_required += 1
         if subblock_size == 0:
@@ -274,4 +283,4 @@ def _get_subblocks(data, offset):
         subblocks.append((offset + n_required, subblock_size))
         n_required += subblock_size
         if n_available < n_required:
-            return (None, 0)
+            raise ValueError("Insufficient data for subblock")

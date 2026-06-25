@@ -21,11 +21,11 @@ class LZWEncoder:
     def __init__(
         self,
         file,
-        min_code_size=2,
-        max_code_size=12,
-        start_with_clear=True,
-        clear_on_max_width=True,
-    ):
+        min_code_size: int = 2,
+        max_code_size: int = 12,
+        start_with_clear: bool = True,
+        clear_on_max_width: bool = True,
+    ) -> None:
         self.file = file
         self.min_code_size = max(min_code_size, 2)
         self.max_code_size = max_code_size
@@ -47,7 +47,7 @@ class LZWEncoder:
         self.next_code = self.eoi_code + 1
 
         # Code currently being encoded
-        self.code = tuple()
+        self.code: tuple = tuple()
         self.code_size = self.min_code_size + 1
 
         self.file.write(struct.pack("B", self.min_code_size))
@@ -55,7 +55,7 @@ class LZWEncoder:
         if start_with_clear:
             self._write_code(self.clear_code)
 
-    def feed(self, values):
+    def feed(self, values: list[int]) -> None:
         for value in values:
             self.code += (value,)
 
@@ -79,7 +79,7 @@ class LZWEncoder:
             if self.next_code == 2**self.max_code_size and self.clear_on_max_width:
                 self.clear()
 
-    def clear(self):
+    def clear(self) -> None:
         self._write_code(self.clear_code)
         self.code_table = {}
         for i in range(2**self.min_code_size):
@@ -87,7 +87,7 @@ class LZWEncoder:
         self.code_size = self.min_code_size + 1
         self.next_code = self.eoi_code + 1
 
-    def finish(self, send_eoi=True, extra_data=None):
+    def finish(self, send_eoi: bool = True, extra_data: bytes | None = None) -> None:
         # Write last code in progress
         self._write_code(self.code_table[self.code])
         if send_eoi:
@@ -109,7 +109,7 @@ class LZWEncoder:
         self.data = b""
         self.code = tuple()
 
-    def _write_code(self, code):
+    def _write_code(self, code: int) -> None:
         bits_needed = self.code_size
         while bits_needed > 0:
             bits_used = min(bits_needed, 8 - self.octet_bits)
@@ -128,15 +128,15 @@ class LZWEncoder:
 
 
 class LZWDecoder:
-    def __init__(self, min_code_size=2, max_code_size=12):
+    def __init__(self, min_code_size: int = 2, max_code_size: int = 12) -> None:
         assert min_code_size < max_code_size
 
         self.min_code_size = min_code_size
         self.max_code_size = max_code_size
 
         # Codes and values to output
-        self.codes = []
-        self.values = []
+        self.codes: list[int] = []
+        self.values: list[int] = []
         self.n_used = 0
 
         # Code table
@@ -154,7 +154,7 @@ class LZWDecoder:
         self.code_size = self.min_code_size + 1  # Required number of bits
         self.last_code = self.clear_code  # Previous code processed
 
-    def feed(self, data, offset=0, length=-1):
+    def feed(self, data: bytes, offset: int = 0, length: int = -1) -> None:
         if length < 0:
             length = len(data) - offset
         for i in range(offset, offset + length):
@@ -229,5 +229,5 @@ class LZWDecoder:
                 else:
                     print("Ignoring unexpected code %d" % code)
 
-    def is_complete(self):
+    def is_complete(self) -> bool:
         return len(self.codes) > 0 and self.codes[-1] == self.eoi_code
